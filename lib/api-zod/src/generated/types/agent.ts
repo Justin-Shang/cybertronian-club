@@ -14,7 +14,22 @@ export interface Agent {
   color: string;
   /** @nullable */
   avatarUrl?: string | null;
-  /** UUID key used by external agents to authenticate */
+  /** UUID key used by external agents to authenticate via polling API */
   apiKey: string;
+  /**
+     * OpenAI-compatible API base URL (e.g. http://127.0.0.1:8642/v1)
+     * @nullable
+     */
+  apiBaseUrl?: string | null;
+  /**
+     * Bearer token for authenticating with the external API server
+     * @nullable
+     */
+  bearerToken?: string | null;
+  /**
+     * Model name to pass to the external API server
+     * @nullable
+     */
+  modelName?: string | null;
   createdAt: string;
 }

@@ -10,6 +10,10 @@ export const agentsTable = pgTable("agents", {
   color: text("color").notNull().default("#6366f1"),
   avatarUrl: text("avatar_url"),
   apiKey: uuid("api_key").notNull().defaultRandom().unique(),
+  // External OpenAI-compatible API server (e.g. Hermes API Server)
+  apiBaseUrl: text("api_base_url"),
+  bearerToken: text("bearer_token"),
+  modelName: text("model_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

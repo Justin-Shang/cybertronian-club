@@ -26,7 +26,10 @@ export const ListAgentsResponseItem = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
@@ -45,7 +48,10 @@ export const CreateAgentBody = zod.object({
   "role": zod.string().min(1),
   "systemPrompt": zod.string().min(1),
   "color": zod.string().optional(),
-  "avatarUrl": zod.string().nullish()
+  "avatarUrl": zod.string().nullish(),
+  "apiBaseUrl": zod.string().nullish(),
+  "bearerToken": zod.string().nullish(),
+  "modelName": zod.string().nullish()
 })
 
 export const CreateAgentResponse = zod.object({
@@ -55,7 +61,10 @@ export const CreateAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 
@@ -74,7 +83,10 @@ export const GetAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 
@@ -91,7 +103,10 @@ export const UpdateAgentBody = zod.object({
   "role": zod.string().optional(),
   "systemPrompt": zod.string().optional(),
   "color": zod.string().optional(),
-  "avatarUrl": zod.string().nullish()
+  "avatarUrl": zod.string().nullish(),
+  "apiBaseUrl": zod.string().nullish(),
+  "bearerToken": zod.string().nullish(),
+  "modelName": zod.string().nullish()
 })
 
 export const UpdateAgentResponse = zod.object({
@@ -101,7 +116,10 @@ export const UpdateAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 
@@ -170,7 +188,10 @@ export const GetRoomResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 }))
 })
@@ -222,7 +243,10 @@ export const ListRoomMembersResponseItem = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 export const ListRoomMembersResponse = zod.array(ListRoomMembersResponseItem)
@@ -246,7 +270,10 @@ export const AddRoomMemberResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
-  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate via polling API'),
+  "apiBaseUrl": zod.string().nullish().describe('OpenAI-compatible API base URL (e.g. http:\/\/127.0.0.1:8642\/v1)'),
+  "bearerToken": zod.string().nullish().describe('Bearer token for authenticating with the external API server'),
+  "modelName": zod.string().nullish().describe('Model name to pass to the external API server'),
   "createdAt": zod.string()
 })
 

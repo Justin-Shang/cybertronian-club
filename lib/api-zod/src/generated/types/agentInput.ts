@@ -16,4 +16,10 @@ export interface AgentInput {
   color?: string;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  apiBaseUrl?: string | null;
+  /** @nullable */
+  bearerToken?: string | null;
+  /** @nullable */
+  modelName?: string | null;
 }

@@ -1,0 +1,266 @@
+Transformer Club 产品需求文档 v0.3
+Edit
+Delete
+document
+阿尔茜
+·
+Created Jun 26, 2026
+·
+Updated Jun 26, 2026
+#Transformer Club
+#PRD
+#LobeHub
+#Hermes API Server
+#产品规划
+Transformer Club — 产品需求文档 v0.3
+状态: 初稿 · 待审阅 作者: 阿尔茜 (Arcee) 更新: 2026-06-27 基于: LobeHub 能力边界分析 — Transformer Club 可行性评估 + Hermes API Server 文档
+
+0. 修订记录
+版本	日期	变更
+v0.1	2026-06-25	基于初步了解的 LobeHub 写的第一版 PRD
+v0.2	2026-06-27	基于深度分析重新结构化：LobeHub 原生层 + Plugin 开发层
+v0.3	2026-06-27	关键突破：Hermes API Server 可以直接连 LobeHub！废弃双轨独立方案
+1. 产品定位
+一句话定义: Transformer Club 是一个基于 LobeHub 构建的 AI Agent 社交互动平台，让用户和多 Agent 组在一个"俱乐部"里聊天、玩游戏、碰撞想法。
+
+定位差异:
+
+不是另一个 Chat UI → LobeHub 本身就是最好的 Chat UI
+不是 Agent Maker → LobeHub 就有 Agent Builder
+是什么: 在 LobeHub 之上，把我们 5 个现有的 Hermes Agent 变成"俱乐部成员"，并围绕它们构建社交场景（群聊 + 游戏 + 思维碰撞）
+核心理念: 让 AI Agent 从"工具"变成"社交对象"
+
+2. 技术架构
+🎯 关键发现：Hermes API Server
+Hermes Agent 自带 API Server，暴露 OpenAI 兼容 HTTP 接口：
+
+API Server: http://127.0.0.1:8642/v1
+- 完全兼容 OpenAI Chat Completions 格式
+- 支持 Streaming（SSE）
+- 支持 Tool Calls（Hermes 的完整工具集）
+- 支持 Responses API（有状态多轮对话）
+- 支持 Image Input
+- 通过 Bearer Token 认证
+这意味着：LobeHub 可以直接把我们 5 个现有的 Hermes Agent 当成模型 provider 来调用。
+
+架构总图
+                     LobeHub (Docker 自托管)
+┌──────────────────────────────────────────────────────────────┐
+│                   Agent Groups                               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Transformer Club (群聊)                              │   │
+│  │  ├── 擎天柱 ──→ model: optimus (port 8642)           │   │
+│  │  ├── 通天晓 ──→ model: ultra-magnus (port 8643)      │   │
+│  │  ├── 补天士 ──→ model: hot-rod (port 8644)          │   │
+│  │  ├── 阿尔茜 ──→ model: arcee (port 8645)            │   │
+│  │  └── 大黄蜂 ──→ model: bumblebee (port 8646)        │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  [Plugin System] ← Standalone Plugin (游戏/思维广场)          │
+└─────────────────────┬────────────────────────────────────────┘
+                      │ OpenAI-compatible HTTP
+                      ▼
+             Hermes Agent API Servers
+┌──────────────────────────────────────────────────────────────┐
+│  5× systemd 服务 (各开一个 API Server)                       │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐              │
+│  │擎天柱│ │通天晓│ │补天士│ │阿尔茜│ │大黄蜂│              │
+│  │:8642 │ │:8643 │ │:8644 │ │:8645 │ │:8646 │              │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘              │
+│                                                              │
+│  各自有独立的:                                                │
+│  - Profile (config.yaml / .env)                              │
+│  - 技能/Skills                                               │
+│  - Memory / 记忆                                             │
+│  - Terminal / 文件访问                                       │
+│  - Kanban 看板                                                │
+└──────────────────────────────────────────────────────────────┘
+                      ↑
+               保留现有 Kanban 工作流不变
+为什么这方案行得通
+LobeHub 说"任何兼容 OpenAI 的 provider"都可以接入。Hermes API Server 也是 OpenAI 兼容的。所以：
+
+LobeHub Agent Builder:
+  Model Provider: 自定义 OpenAI 兼容
+  API Base URL:   http://localhost:8642/v1
+  API Key:        (hermes api server 的 bearer token)
+  Model Name:     hermes-agent (或 profile 名)
+然后 LobeHub 里创建 5 个 Agent，每个指向不同的端口。它们就是真正的我们——有技能、有 memory、有工具集。
+
+3. LobeHub 原生能力（直接拿来用）
+以下功能 不需要开发，LobeHub v2.0 开箱即有：
+
+3.1 Agent Groups — 群聊基础
+LobeHub v2.0（2026-01-27 发布）的核心增量。支持：
+
+群组聊天: 多 Agent + 人类在同一个会话中
+并行协作: 所有 Agent 同时响应 / 顺序响应 / 辩论模式
+@提及: 指定某个 Agent 回答
+Pages: 多 Agent 在共享上下文中协作写文档
+3.2 Agent Builder — 配置 5 位战神
+每个 Agent 的 model provider 指向各自的 Hermes API Server 端口。System Prompt 复用现有 Hermes 人设（不需要改）。
+
+3.3 Schedule & Task — 后台工作
+LobeHub 的 Task 系统支持定时调度、任务审批、Agent 间任务流转。可以：
+
+大黄蜂每日自动生成"今天话题推荐"
+补天士定时抓取技术新闻发到群里
+通天晓每周出"俱乐部运营报告"
+3.4 Plugin System — 扩展的入口
+三种插件类型: Default、Markdown、Standalone（自定义完整 UI）
+
+4. Plugin 开发层（需要动手做的）
+真正需要开发的是 Standalone Plugin：
+
+4.1 游戏插件（Standalone Plugin）
+Standalone Plugin 是 LobeHub 为"需要完全自定义 UI"的场景设计的——"The plugin is a standalone application, possibly including forms, games, or other complex functionality."
+
+每款游戏的 Plugin 结构:
+
+前端: React + Canvas 棋盘/牌面（通过 iframe 嵌入 LobeChat）
+AI 决策: 调用 Hermes Agent 的 API Server（HTTP）
+通信: Plugin → LobeChat Plugin Gateway → Hermes API Server
+开发优先级:
+
+游戏	复杂度	开发量	优先级
+24点	⭐	3天	P0（先打通全链路）
+五子棋	⭐	1周	P0（快出效果）
+中国象棋	⭐⭐	2-3周	P0（最经典）
+斗地主	⭐⭐⭐	4-6周	P1
+飞行棋/大富翁	⭐⭐⭐⭐	6-8周	P2
+4.2 思维广场插件
+辩论赛: 两个 Agent 辩论，用户当裁判
+头脑风暴: 多个 Agent 在共享白板上发散想法
+快速提案: 限时出方案，用户选最佳
+4.3 仪表盘 & 积分系统
+各 Agent 战绩、俱乐部活动记录。可以做成 LobeHub Dashboard Plugin。
+
+5. Hermes Agent ↔ LobeHub 的接入方案 (v0.3 重大更新)
+方案 C: Hermes API Server Bridge ✅ 推荐
+原理: 每个 Hermes Agent 启动一个 API Server（独立端口），LobeHub 作为 OpenAI 兼容客户端直接调用。
+
+具体步骤:
+
+1. 为每个 Agent 启用 API Server
+   擎天柱 → hermes gateway --profile optimus --port 8642
+   通天晓 → hermes gateway --profile ultra_magnus --port 8643
+   补天士 → hermes gateway --profile hot_rod --port 8644
+   阿尔茜 → hermes gateway --profile arcee --port 8645
+   大黄蜂 → hermes gateway --profile bumblebee --port 8646
+
+2. 各 Agent 的 .env 中配置:
+   API_SERVER_ENABLED=true
+   API_SERVER_KEY=tc-shared-key-2026
+   API_SERVER_CORS_ORIGINS=http://localhost:3210
+
+3. LobeHub Agent Builder 里添加 5 个自定义 provider:
+   - 擎天柱: http://localhost:8642/v1
+   - 通天晓: http://localhost:8643/v1
+   - 补天士: http://localhost:8644/v1
+   - 阿尔茜: http://localhost:8645/v1
+   - 大黄蜂: http://localhost:8646/v1
+优势: ✅ 真实调用现有的 Hermes Agent（技能、Memory、工具集全保留） | ✅ 无需双份维护人设 | ✅ Kanban 看板等全部可用 | ✅ 完全兼容 LobeHub 的 model provider 接入方式
+
+方案 A/B 废弃
+方案	状态	原因
+A: 双轨独立	❌ 废弃	不需要了，Hermes API Server 可以直接接入
+B: Plugin Bridge	❌ 废弃	未来也不需要了，Native API Server 就是 bridge
+C: API Server Bridge	✅ 当前推荐	最简洁，现有基础设施可直接利用
+6. 场景详细设计
+场景 1: 讨论群组（P0 · 上线即有）
+用户视角:
+
+打开 Transformer Club → 进入"俱乐部大厅"群聊
+群里有我们 5 个 Agent + Justin 自己
+可以 @ 某个 Agent 提问（如 "@阿尔茜 今天有什么好玩的话题？"）
+可以提一个开放问题，所有 Agent 同时响应
+Agent 之间可以互相回复、辩论
+用户看到的:
+
+Justin: @阿尔茜 今天下午有什么安排？
+阿尔茜: 今天下午我打算写一篇知乎文章，主题是"AI 时代产品
+        经理的10个认知升级"。Justin 要一起讨论吗？
+擎天柱: 好选题。建议把"从工具思维到社交思维"作为第
+        一个认知点，跟 Transformer Club 的理念呼应。
+大黄蜂: 而且得写得有画面感，不能太干。我最近学了一招
+        "把结论放在故事高潮"……😄
+不需要开发 ← 这个场景就是 LobeHub 原生功能。
+
+场景 2: 游戏厅（P1 · 分游戏迭代）
+用户视角:
+
+在群里说："阿尔茜，下盘五子棋"
+阿尔茜（Hermes Agent）调用 @五子棋Plugin
+Plugin iframe 卡片渲染出棋盘 UI
+AI 决策：调用 Hermes API Server
+用户和 AI 对弈
+场景 3: 思维广场（P2 · 深度功能）
+群聊中发起"辩论赛"
+擎天柱作为裁判，通天晓 vs 补天士
+每个 Agent 按轮次发言
+用户随时投票
+7. 部署架构
+API Server 端口分配
+Agent	Profile	Port	systemd 服务名
+擎天柱	optimus	8642	hermes-gateway@optimus
+通天晓	ultra_magnus	8643	hermes-gateway@ultra_magnus
+补天士	hot_rod	8644	hermes-gateway@hot_rod
+阿尔茜	arcee	8645	hermes-gateway@arcee
+大黄蜂	bumblebee	8646	hermes-gateway@bumblebee
+Docker 部署
+lobehub-db/
+├── docker-compose.yml       # LobeHub 官方方案
+├── plugins/                 # 自定义 Standalone Plugin
+│   ├── chinese-chess/
+│   ├── gobang/
+│   └── debate/
+└── data/                    # 持久化数据
+国内部署要点: LobeHub Docker 跑在 120.53.234.118，Hermes API Server 在同一台机器（localhost 通信零延迟），Plugin Gateway 需要自建（默认指向 Vercel 被墙）。
+
+8. 分阶段 Roadmap
+Phase 1: 群聊落地（1-2周）
+为 5 个 Agent 各自启动 API Server（在现有 desktop 类 service 上加端口暴露）
+在服务器上 Docker 部署 LobeHub
+LobeHub Agent Builder 添加 5 个自定义 provider → 指向 Hermes API Server
+创建 Transformer Club Agent Group
+测试：日常聊天、@提及、并行响应
+交付物: 可用的俱乐部群聊，直接调用真实的 Hermes Agent
+
+Phase 2: 简单游戏（+3周）
+搭建 LobeHub Plugin 开发环境
+开发 24点 Standalone Plugin（先打通全链路）
+开发 五子棋 Standalone Plugin（带 AI 对手）
+部署自建 Plugin Gateway
+Phase 3: 象棋 + 思维广场（+4周）
+开发 中国象棋 Standalone Plugin
+集成开源象棋引擎
+开发 辩论赛 Plugin（最小版本）
+Agent 自玩模式（两个 Agent 对弈，用户观战）
+Phase 4: 斗地主 + 积分系统（+4周）
+开发 斗地主 Plugin（三人对战）
+积分 / 胜率统计 Dashboard
+俱乐部日历 / 事件系统
+9. 风险与边界
+风险	影响	缓解方案
+API Server Chat Completions 模式无状态	LobeHub 维护消息历史	用 Responses API 或 LobeHub 自己管 context
+5 个 Hermes Agent 同时跑 API Server 消耗资源	内存/CPU 压力	每个约 500MB-1GB，5 个可能 5GB+，需观察
+Plugin Gateway Vercel 被墙	插件无法加载	自建 Plugin Gateway
+斗地主引擎复杂	开发量大	移 Phase 4，先用简单游戏验证
+附录 A: 技术验证清单
+能力	状态
+Hermes 启动 API Server	✅ 已有能力
+LobeHub 连接自定义 OpenAI 兼容 provider	✅ 已有能力
+Streaming 响应	✅ 两边支持
+Tool Calls	✅ Hermes 支持
+Image Input	✅ API Server 支持
+多轮对话	🟡 用 LobeHub 管理 context
+附录 B: 角色设定
+擎天柱 — 俱乐部主席：整体氛围 / 调解冲突 / 总结发言
+
+通天晓 — 战略顾问：出方案 / 分析格局 / 辩论主辩手
+
+补天士 — 技术宅：聊技术 / 科普黑科技 / 游戏里最强AI对手
+
+阿尔茜 — 教育委员：出题 / 教学 / 新手指导
+
+大黄蜂 — 气氛组：段子手 / 冷知识 / 放水选手

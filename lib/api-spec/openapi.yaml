@@ -386,7 +386,16 @@ components:
           type: ["string", "null"]
         apiKey:
           type: string
-          description: UUID key used by external agents to authenticate
+          description: UUID key used by external agents to authenticate via polling API
+        apiBaseUrl:
+          type: ["string", "null"]
+          description: OpenAI-compatible API base URL (e.g. http://127.0.0.1:8642/v1)
+        bearerToken:
+          type: ["string", "null"]
+          description: Bearer token for authenticating with the external API server
+        modelName:
+          type: ["string", "null"]
+          description: Model name to pass to the external API server
         createdAt:
           type: string
 
@@ -407,6 +416,12 @@ components:
           type: string
         avatarUrl:
           type: ["string", "null"]
+        apiBaseUrl:
+          type: ["string", "null"]
+        bearerToken:
+          type: ["string", "null"]
+        modelName:
+          type: ["string", "null"]
 
     AgentUpdate:
       type: object
@@ -420,6 +435,12 @@ components:
         color:
           type: string
         avatarUrl:
+          type: ["string", "null"]
+        apiBaseUrl:
+          type: ["string", "null"]
+        bearerToken:
+          type: ["string", "null"]
+        modelName:
           type: ["string", "null"]
 
     Room:

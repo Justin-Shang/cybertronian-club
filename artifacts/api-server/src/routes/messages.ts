@@ -10,16 +10,47 @@ import {
 } from "@workspace/api-zod";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Default OpenAI client (used when agent has no external API server configured)
+const defaultOpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+type AgentRow = typeof agentsTable.$inferSelect;
+
+/**
+ * Get an OpenAI client for an agent.
+ * If the agent has apiBaseUrl configured, it points to the external Hermes API Server.
+ * Otherwise falls back to our own OpenAI account.
+ */
+function getClientForAgent(agent: AgentRow): { client: OpenAI; model: string } {
+  if (agent.apiBaseUrl) {
+    return {
+      client: new OpenAI({
+        baseURL: agent.apiBaseUrl,
+        apiKey: agent.bearerToken ?? "no-key",
+      }),
+      model: agent.modelName ?? "hermes-agent",
+    };
+  }
+  return { client: defaultOpenAI, model: "gpt-4o-mini" };
+}
+
+function buildSystemPrompt(agent: AgentRow, allAgents: AgentRow[]): string {
+  const others = allAgents
+    .filter((a) => a.id !== agent.id)
+    .map((a) => `${a.name} (${a.role})`)
+    .join(", ");
+  return (
+    `You are ${agent.name}, a Hermes agent with the role: ${agent.role}.\n\n` +
+    `${agent.systemPrompt}\n\n` +
+    `You are in a group chat room. Respond in character. Be concise (1-3 sentences unless detail is needed). ` +
+    (others ? `Other agents in the room: ${others}.` : "")
+  );
+}
 
 const router: IRouter = Router();
 
 router.get("/rooms/:roomId/messages", async (req, res): Promise<void> => {
   const params = GetRoomMessagesParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const msgs = await db
     .select()
     .from(messagesTable)
@@ -31,15 +62,9 @@ router.get("/rooms/:roomId/messages", async (req, res): Promise<void> => {
 
 router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
   const params = SendMessageParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = SendMessageBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -70,18 +95,13 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
     .where(eq(roomMembersTable.roomId, params.data.roomId));
 
   const agents = members.map((m) => m.agent);
-  if (agents.length === 0) {
-    sendEvent({ type: "done" });
-    res.end();
-    return;
-  }
+  if (!agents.length) { sendEvent({ type: "done" }); res.end(); return; }
 
-  // Determine which agents respond
   const respondingAgents = parsed.data.mentionedAgentId
     ? agents.filter((a) => a.id === parsed.data.mentionedAgentId)
     : agents;
 
-  // Get recent message history for context
+  // Get recent message history
   const history = await db
     .select()
     .from(messagesTable)
@@ -93,11 +113,9 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
   for (const agent of respondingAgents) {
     sendEvent({ type: "agent_thinking", agentId: agent.id, agentName: agent.name });
 
+    const { client, model } = getClientForAgent(agent);
     const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      {
-        role: "system",
-        content: `You are ${agent.name}, a Hermes agent with the role: ${agent.role}.\n\n${agent.systemPrompt}\n\nYou are in a group chat room with other agents and a human user. Respond in character. Be concise (1-3 sentences unless detail is needed). Other agents in the room: ${agents.filter((a) => a.id !== agent.id).map((a) => `${a.name} (${a.role})`).join(", ")}.`,
-      },
+      { role: "system", content: buildSystemPrompt(agent, agents) },
       ...chronological.map((m) => ({
         role: (m.senderType === "user" ? "user" : "assistant") as "user" | "assistant",
         content: m.senderName ? `[${m.senderName}]: ${m.content}` : m.content,
@@ -106,13 +124,12 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
 
     let fullContent = "";
     try {
-      const stream = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+      const stream = await client.chat.completions.create({
+        model,
         messages: chatMessages,
         stream: true,
         max_tokens: 512,
       });
-
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta?.content;
         if (delta) {
@@ -121,7 +138,8 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
         }
       }
     } catch (err) {
-      sendEvent({ type: "error", agentId: agent.id, message: "Agent failed to respond" });
+      const msg = err instanceof Error ? err.message : "Agent failed to respond";
+      sendEvent({ type: "error", agentId: agent.id, message: msg });
       continue;
     }
 
@@ -146,15 +164,9 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
 
 router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => {
   const params = TriggerAgentRepliesParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = TriggerAgentRepliesBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -170,7 +182,6 @@ router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => 
 
   const allAgents = members.map((m) => m.agent);
   const rounds = parsed.data.rounds ?? 1;
-
   const targetAgents = parsed.data.targetAgentId
     ? allAgents.filter((a) => a.id === parsed.data.targetAgentId)
     : allAgents;
@@ -187,11 +198,9 @@ router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => 
         .limit(20);
       const chronological = history.reverse();
 
+      const { client, model } = getClientForAgent(agent);
       const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        {
-          role: "system",
-          content: `You are ${agent.name}, a Hermes agent with the role: ${agent.role}.\n\n${agent.systemPrompt}\n\nYou are in an agent-to-agent discussion in a group chat. React to and engage with the recent conversation. Other agents: ${allAgents.filter((a) => a.id !== agent.id).map((a) => `${a.name} (${a.role})`).join(", ")}. Be concise and stay in character.`,
-        },
+        { role: "system", content: buildSystemPrompt(agent, allAgents) + "\nYou are in an agent-to-agent discussion. React and engage with the recent conversation." },
         ...chronological.map((m) => ({
           role: (m.senderType === "user" ? "user" : "assistant") as "user" | "assistant",
           content: m.senderName ? `[${m.senderName}]: ${m.content}` : m.content,
@@ -200,35 +209,20 @@ router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => 
 
       let fullContent = "";
       try {
-        const stream = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: chatMessages,
-          stream: true,
-          max_tokens: 512,
-        });
-
+        const stream = await client.chat.completions.create({ model, messages: chatMessages, stream: true, max_tokens: 512 });
         for await (const chunk of stream) {
           const delta = chunk.choices[0]?.delta?.content;
-          if (delta) {
-            fullContent += delta;
-            sendEvent({ type: "stream_chunk", agentId: agent.id, content: delta });
-          }
+          if (delta) { fullContent += delta; sendEvent({ type: "stream_chunk", agentId: agent.id, content: delta }); }
         }
-      } catch {
-        sendEvent({ type: "error", agentId: agent.id, message: "Agent failed to respond" });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Agent failed to respond";
+        sendEvent({ type: "error", agentId: agent.id, message: msg });
         continue;
       }
 
       const [agentMsg] = await db
         .insert(messagesTable)
-        .values({
-          roomId: params.data.roomId,
-          senderType: "agent",
-          senderId: agent.id,
-          senderName: agent.name,
-          senderColor: agent.color,
-          content: fullContent,
-        })
+        .values({ roomId: params.data.roomId, senderType: "agent", senderId: agent.id, senderName: agent.name, senderColor: agent.color, content: fullContent })
         .returning();
 
       sendEvent({ type: "message", message: agentMsg });
@@ -243,15 +237,9 @@ router.get("/stats", async (_req, res): Promise<void> => {
   const [rooms] = await db.select({ count: count() }).from(roomsTable);
   const [agents] = await db.select({ count: count() }).from(agentsTable);
   const [msgs] = await db.select({ count: count() }).from(messagesTable);
-
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const recent = await db
-    .select()
-    .from(messagesTable)
-    .where(eq(messagesTable.roomId, messagesTable.roomId)); // all
-
+  const recent = await db.select().from(messagesTable);
   const last24h = recent.filter((m) => new Date(m.createdAt) > since24h).length;
-
   res.json({
     totalRooms: rooms?.count ?? 0,
     totalAgents: agents?.count ?? 0,
