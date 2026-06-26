@@ -26,6 +26,7 @@ export const ListAgentsResponseItem = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 export const ListAgentsResponse = zod.array(ListAgentsResponseItem)
@@ -54,6 +55,7 @@ export const CreateAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 
@@ -72,6 +74,7 @@ export const GetAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 
@@ -98,6 +101,7 @@ export const UpdateAgentResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 
@@ -166,6 +170,7 @@ export const GetRoomResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 }))
 })
@@ -217,6 +222,7 @@ export const ListRoomMembersResponseItem = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 export const ListRoomMembersResponse = zod.array(ListRoomMembersResponseItem)
@@ -240,6 +246,7 @@ export const AddRoomMemberResponse = zod.object({
   "systemPrompt": zod.string(),
   "color": zod.string(),
   "avatarUrl": zod.string().nullish(),
+  "apiKey": zod.string().describe('UUID key used by external agents to authenticate'),
   "createdAt": zod.string()
 })
 

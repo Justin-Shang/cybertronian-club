@@ -17,6 +17,8 @@ export interface Agent {
   color: string;
   /** @nullable */
   avatarUrl?: string | null;
+  /** UUID key used by external agents to authenticate */
+  apiKey: string;
   createdAt: string;
 }
 

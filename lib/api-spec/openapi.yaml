@@ -370,7 +370,7 @@ components:
 
     Agent:
       type: object
-      required: [id, name, role, systemPrompt, color, createdAt]
+      required: [id, name, role, systemPrompt, color, apiKey, createdAt]
       properties:
         id:
           type: integer
@@ -384,6 +384,9 @@ components:
           type: string
         avatarUrl:
           type: ["string", "null"]
+        apiKey:
+          type: string
+          description: UUID key used by external agents to authenticate
         createdAt:
           type: string
 

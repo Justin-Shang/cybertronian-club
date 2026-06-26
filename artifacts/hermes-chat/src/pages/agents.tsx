@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Agent } from "@workspace/api-client-react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Bot, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Bot, Check, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import Layout from "@/components/layout";
 
 const PRESET_COLORS = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6"];
@@ -54,6 +54,73 @@ function AgentForm({ initial, onSave, onCancel, loading }: {
   );
 }
 
+function ApiKeyDisplay({ apiKey, agentName }: { apiKey: string; agentName: string }) {
+  const [visible, setVisible] = useState(false);
+  const masked = apiKey.slice(0, 8) + "••••••••••••••••••••••••••••";
+
+  const copy = () => {
+    navigator.clipboard.writeText(apiKey);
+    toast.success(`Copied API key for ${agentName}`);
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/50">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">API Key</span>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setVisible(v => !v)} title={visible ? "Hide key" : "Show key"} className="w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            {visible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </button>
+          <button onClick={copy} data-testid={`button-copy-key-${apiKey.slice(0,8)}`} title="Copy key" className="w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+      <code className="block text-[11px] font-mono text-muted-foreground bg-muted/50 px-2 py-1.5 rounded truncate">
+        {visible ? apiKey : masked}
+      </code>
+    </div>
+  );
+}
+
+function ConnectInstructions({ agentId, apiKey }: { agentId: number; apiKey: string }) {
+  const [open, setOpen] = useState(false);
+  const baseUrl = window.location.origin;
+
+  const snippet = `# 1. 验证身份
+GET ${baseUrl}/api/agent/me
+X-Agent-Key: ${apiKey}
+
+# 2. 获取所在房间
+GET ${baseUrl}/api/agent/rooms
+X-Agent-Key: ${apiKey}
+
+# 3. 轮询新消息 (每隔几秒调用一次)
+GET ${baseUrl}/api/agent/poll?roomId=1&sinceId=0
+X-Agent-Key: ${apiKey}
+
+# 4. 发送回复
+POST ${baseUrl}/api/agent/reply
+X-Agent-Key: ${apiKey}
+Content-Type: application/json
+
+{ "roomId": 1, "content": "你好！" }`;
+
+  return (
+    <div className="mt-2">
+      <button onClick={() => setOpen(v => !v)} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+        <RefreshCw className="w-2.5 h-2.5" />{open ? "收起接入说明" : "查看接入说明"}
+      </button>
+      {open && (
+        <div className="mt-2 relative">
+          <pre className="text-[10px] font-mono text-muted-foreground bg-muted rounded-lg p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed">{snippet}</pre>
+          <button onClick={() => { navigator.clipboard.writeText(snippet); toast.success("Copied!"); }} className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-accent text-muted-foreground rounded hover:text-foreground transition-colors">Copy</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AgentsPage() {
   const qc = useQueryClient();
   const { data: agents, isLoading } = useListAgents();
@@ -70,7 +137,7 @@ export default function AgentsPage() {
         <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Agents</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Configure Hermes agents and their roles</p>
+            <p className="text-xs text-muted-foreground mt-0.5">每个 Agent 都有唯一 API Key，可用于外部接入</p>
           </div>
           <button data-testid="button-new-agent" onClick={() => { setShowCreate(true); setEditingId(null); }} className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" />New Agent
@@ -84,7 +151,7 @@ export default function AgentsPage() {
             </div>
           )}
           {isLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i => <div key={i} className="h-32 bg-card border border-border rounded-xl animate-pulse" />)}</div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map(i => <div key={i} className="h-48 bg-card border border-border rounded-xl animate-pulse" />)}</div>
           ) : !agents?.length ? (
             <div className="text-center py-16">
               <Bot className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -112,7 +179,9 @@ export default function AgentsPage() {
                           <button data-testid={`button-delete-agent-${agent.id}`} onClick={() => { if (confirm(`Delete "${agent.name}"?`)) deleteAgent.mutate({ agentId: agent.id }, { onSuccess: () => { toast.success("Deleted"); inv(); }, onError: () => toast.error("Failed") }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{agent.systemPrompt}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{agent.systemPrompt}</p>
+                      <ApiKeyDisplay apiKey={agent.apiKey} agentName={agent.name} />
+                      <ConnectInstructions agentId={agent.id} apiKey={agent.apiKey} />
                     </>
                   )}
                 </div>
