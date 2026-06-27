@@ -5,6 +5,7 @@ import roomsRouter from "./rooms";
 import messagesRouter from "./messages";
 import externalAgentRouter from "./external-agent";
 import gamesRouter from "./games";
+import squareRouter from "./square";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(roomsRouter);
 router.use(messagesRouter);
 router.use(externalAgentRouter);
 router.use(gamesRouter);
+router.use(squareRouter);
 
 export default router;

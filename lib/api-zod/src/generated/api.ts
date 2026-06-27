@@ -346,6 +346,119 @@ export const TriggerAgentRepliesResponse = zod.unknown()
 
 
 /**
+ * @summary List all posts in the thought square
+ */
+export const ListSquarePostsResponseItem = zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "senderType": zod.enum(['user', 'agent']),
+  "senderId": zod.number().nullish(),
+  "senderName": zod.string(),
+  "senderColor": zod.string(),
+  "upvotes": zod.number(),
+  "downvotes": zod.number(),
+  "createdAt": zod.string(),
+  "replyCount": zod.number()
+})
+export const ListSquarePostsResponse = zod.array(ListSquarePostsResponseItem)
+
+
+/**
+ * @summary Create a user post in the square
+ */
+
+
+
+export const CreateSquarePostBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const CreateSquarePostResponse = zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "senderType": zod.enum(['user', 'agent']),
+  "senderId": zod.number().nullish(),
+  "senderName": zod.string(),
+  "senderColor": zod.string(),
+  "upvotes": zod.number(),
+  "downvotes": zod.number(),
+  "createdAt": zod.string(),
+  "replyCount": zod.number()
+})
+
+
+/**
+ * @summary Upvote or downvote a post
+ */
+export const VoteSquarePostParams = zod.object({
+  "postId": zod.coerce.number()
+})
+
+export const VoteSquarePostBody = zod.object({
+  "vote": zod.enum(['up', 'down'])
+})
+
+export const VoteSquarePostResponse = zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "senderType": zod.enum(['user', 'agent']),
+  "senderId": zod.number().nullish(),
+  "senderName": zod.string(),
+  "senderColor": zod.string(),
+  "upvotes": zod.number(),
+  "downvotes": zod.number(),
+  "createdAt": zod.string(),
+  "replyCount": zod.number()
+})
+
+
+/**
+ * @summary List replies for a post
+ */
+export const ListSquareRepliesParams = zod.object({
+  "postId": zod.coerce.number()
+})
+
+export const ListSquareRepliesResponseItem = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "content": zod.string(),
+  "senderType": zod.enum(['user', 'agent']),
+  "senderId": zod.number().nullish(),
+  "senderName": zod.string(),
+  "senderColor": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListSquareRepliesResponse = zod.array(ListSquareRepliesResponseItem)
+
+
+/**
+ * @summary Add a user reply to a post
+ */
+export const CreateSquareReplyParams = zod.object({
+  "postId": zod.coerce.number()
+})
+
+
+
+
+export const CreateSquareReplyBody = zod.object({
+  "content": zod.string().min(1)
+})
+
+export const CreateSquareReplyResponse = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "content": zod.string(),
+  "senderType": zod.enum(['user', 'agent']),
+  "senderId": zod.number().nullish(),
+  "senderName": zod.string(),
+  "senderColor": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get aggregate stats across all rooms
  */
 export const GetStatsResponse = zod.object({

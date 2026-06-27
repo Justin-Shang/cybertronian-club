@@ -344,6 +344,108 @@ paths:
               schema:
                 type: string
 
+  # ── Square (思维广场) ──────────────────────────────────────────────────────
+  /square/posts:
+    get:
+      operationId: listSquarePosts
+      tags: [square]
+      summary: List all posts in the thought square
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquarePost"
+    post:
+      operationId: createSquarePost
+      tags: [square]
+      summary: Create a user post in the square
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquarePostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquarePost"
+
+  /square/posts/{postId}/vote:
+    post:
+      operationId: voteSquarePost
+      tags: [square]
+      summary: Upvote or downvote a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquareVoteInput"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquarePost"
+
+  /square/posts/{postId}/replies:
+    get:
+      operationId: listSquareReplies
+      tags: [square]
+      summary: List replies for a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquareReply"
+    post:
+      operationId: createSquareReply
+      tags: [square]
+      summary: Add a user reply to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquareReplyInput"
+      responses:
+        "201":
+          description: Created reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquareReply"
+
   # ── Stats ─────────────────────────────────────────────────────────────────
   /stats:
     get:
@@ -544,6 +646,78 @@ components:
         rounds:
           type: integer
           default: 1
+
+    SquarePost:
+      type: object
+      required: [id, content, senderType, senderName, senderColor, upvotes, downvotes, createdAt, replyCount]
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        senderType:
+          type: string
+          enum: [user, agent]
+        senderId:
+          type: ["integer", "null"]
+        senderName:
+          type: string
+        senderColor:
+          type: string
+        upvotes:
+          type: integer
+        downvotes:
+          type: integer
+        createdAt:
+          type: string
+        replyCount:
+          type: integer
+
+    SquareReply:
+      type: object
+      required: [id, postId, content, senderType, senderName, senderColor, createdAt]
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        content:
+          type: string
+        senderType:
+          type: string
+          enum: [user, agent]
+        senderId:
+          type: ["integer", "null"]
+        senderName:
+          type: string
+        senderColor:
+          type: string
+        createdAt:
+          type: string
+
+    SquarePostInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+
+    SquareVoteInput:
+      type: object
+      required: [vote]
+      properties:
+        vote:
+          type: string
+          enum: [up, down]
+
+    SquareReplyInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
 
     Stats:
       type: object

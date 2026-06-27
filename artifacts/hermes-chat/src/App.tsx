@@ -9,6 +9,7 @@ import RoomsPage from "@/pages/rooms";
 import GamesPage from "@/pages/games";
 import GobangPage from "@/pages/gobang";
 import TwentyFourPage from "@/pages/twenty-four";
+import SquarePage from "@/pages/square";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 10_000 } },
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/games" component={GamesPage} />
       <Route path="/games/gobang" component={GobangPage} />
       <Route path="/games/twentyfour" component={TwentyFourPage} />
+      <Route path="/square" component={SquarePage} />
       <Route component={NotFound} />
     </Switch>
   );

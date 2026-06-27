@@ -141,6 +141,70 @@ export interface TriggerInput {
   rounds?: number;
 }
 
+export type SquarePostSenderType = typeof SquarePostSenderType[keyof typeof SquarePostSenderType];
+
+
+export const SquarePostSenderType = {
+  user: 'user',
+  agent: 'agent',
+} as const;
+
+export interface SquarePost {
+  id: number;
+  content: string;
+  senderType: SquarePostSenderType;
+  /** @nullable */
+  senderId?: number | null;
+  senderName: string;
+  senderColor: string;
+  upvotes: number;
+  downvotes: number;
+  createdAt: string;
+  replyCount: number;
+}
+
+export type SquareReplySenderType = typeof SquareReplySenderType[keyof typeof SquareReplySenderType];
+
+
+export const SquareReplySenderType = {
+  user: 'user',
+  agent: 'agent',
+} as const;
+
+export interface SquareReply {
+  id: number;
+  postId: number;
+  content: string;
+  senderType: SquareReplySenderType;
+  /** @nullable */
+  senderId?: number | null;
+  senderName: string;
+  senderColor: string;
+  createdAt: string;
+}
+
+export interface SquarePostInput {
+  /** @minLength 1 */
+  content: string;
+}
+
+export type SquareVoteInputVote = typeof SquareVoteInputVote[keyof typeof SquareVoteInputVote];
+
+
+export const SquareVoteInputVote = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+export interface SquareVoteInput {
+  vote: SquareVoteInputVote;
+}
+
+export interface SquareReplyInput {
+  /** @minLength 1 */
+  content: string;
+}
+
 export interface Stats {
   totalRooms: number;
   totalAgents: number;

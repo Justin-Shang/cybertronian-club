@@ -31,6 +31,11 @@ import type {
   RoomInput,
   RoomMemberInput,
   RoomUpdate,
+  SquarePost,
+  SquarePostInput,
+  SquareReply,
+  SquareReplyInput,
+  SquareVoteInput,
   Stats,
   TriggerInput
 } from './api.schemas';
@@ -1306,6 +1311,372 @@ export const useTriggerAgentReplies = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getTriggerAgentRepliesMutationOptions(options));
+    }
+
+export const getListSquarePostsUrl = () => {
+
+
+
+
+  return `/api/square/posts`
+}
+
+/**
+ * @summary List all posts in the thought square
+ */
+export const listSquarePosts = async ( options?: RequestInit): Promise<SquarePost[]> => {
+
+  return customFetch<SquarePost[]>(getListSquarePostsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSquarePostsQueryKey = () => {
+    return [
+    `/api/square/posts`
+    ] as const;
+    }
+
+
+export const getListSquarePostsQueryOptions = <TData = Awaited<ReturnType<typeof listSquarePosts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquarePosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSquarePostsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSquarePosts>>> = ({ signal }) => listSquarePosts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSquarePosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSquarePostsQueryResult = NonNullable<Awaited<ReturnType<typeof listSquarePosts>>>
+export type ListSquarePostsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all posts in the thought square
+ */
+
+export function useListSquarePosts<TData = Awaited<ReturnType<typeof listSquarePosts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquarePosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSquarePostsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSquarePostUrl = () => {
+
+
+
+
+  return `/api/square/posts`
+}
+
+/**
+ * @summary Create a user post in the square
+ */
+export const createSquarePost = async (squarePostInput: SquarePostInput, options?: RequestInit): Promise<SquarePost> => {
+
+  return customFetch<SquarePost>(getCreateSquarePostUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(squarePostInput)
+  }
+);}
+
+
+
+
+export const getCreateSquarePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquarePost>>, TError,{data: BodyType<SquarePostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSquarePost>>, TError,{data: BodyType<SquarePostInput>}, TContext> => {
+
+const mutationKey = ['createSquarePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSquarePost>>, {data: BodyType<SquarePostInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSquarePost(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSquarePostMutationResult = NonNullable<Awaited<ReturnType<typeof createSquarePost>>>
+    export type CreateSquarePostMutationBody = BodyType<SquarePostInput>
+    export type CreateSquarePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a user post in the square
+ */
+export const useCreateSquarePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquarePost>>, TError,{data: BodyType<SquarePostInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSquarePost>>,
+        TError,
+        {data: BodyType<SquarePostInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSquarePostMutationOptions(options));
+    }
+
+export const getVoteSquarePostUrl = (postId: number,) => {
+
+
+
+
+  return `/api/square/posts/${postId}/vote`
+}
+
+/**
+ * @summary Upvote or downvote a post
+ */
+export const voteSquarePost = async (postId: number,
+    squareVoteInput: SquareVoteInput, options?: RequestInit): Promise<SquarePost> => {
+
+  return customFetch<SquarePost>(getVoteSquarePostUrl(postId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(squareVoteInput)
+  }
+);}
+
+
+
+
+export const getVoteSquarePostMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteSquarePost>>, TError,{postId: number;data: BodyType<SquareVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voteSquarePost>>, TError,{postId: number;data: BodyType<SquareVoteInput>}, TContext> => {
+
+const mutationKey = ['voteSquarePost'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voteSquarePost>>, {postId: number;data: BodyType<SquareVoteInput>}> = (props) => {
+          const {postId,data} = props ?? {};
+
+          return  voteSquarePost(postId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoteSquarePostMutationResult = NonNullable<Awaited<ReturnType<typeof voteSquarePost>>>
+    export type VoteSquarePostMutationBody = BodyType<SquareVoteInput>
+    export type VoteSquarePostMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upvote or downvote a post
+ */
+export const useVoteSquarePost = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteSquarePost>>, TError,{postId: number;data: BodyType<SquareVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voteSquarePost>>,
+        TError,
+        {postId: number;data: BodyType<SquareVoteInput>},
+        TContext
+      > => {
+      return useMutation(getVoteSquarePostMutationOptions(options));
+    }
+
+export const getListSquareRepliesUrl = (postId: number,) => {
+
+
+
+
+  return `/api/square/posts/${postId}/replies`
+}
+
+/**
+ * @summary List replies for a post
+ */
+export const listSquareReplies = async (postId: number, options?: RequestInit): Promise<SquareReply[]> => {
+
+  return customFetch<SquareReply[]>(getListSquareRepliesUrl(postId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSquareRepliesQueryKey = (postId: number,) => {
+    return [
+    `/api/square/posts/${postId}/replies`
+    ] as const;
+    }
+
+
+export const getListSquareRepliesQueryOptions = <TData = Awaited<ReturnType<typeof listSquareReplies>>, TError = ErrorType<unknown>>(postId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquareReplies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSquareRepliesQueryKey(postId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSquareReplies>>> = ({ signal }) => listSquareReplies(postId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: postId !== null && postId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSquareReplies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSquareRepliesQueryResult = NonNullable<Awaited<ReturnType<typeof listSquareReplies>>>
+export type ListSquareRepliesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List replies for a post
+ */
+
+export function useListSquareReplies<TData = Awaited<ReturnType<typeof listSquareReplies>>, TError = ErrorType<unknown>>(
+ postId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquareReplies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSquareRepliesQueryOptions(postId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSquareReplyUrl = (postId: number,) => {
+
+
+
+
+  return `/api/square/posts/${postId}/replies`
+}
+
+/**
+ * @summary Add a user reply to a post
+ */
+export const createSquareReply = async (postId: number,
+    squareReplyInput: SquareReplyInput, options?: RequestInit): Promise<SquareReply> => {
+
+  return customFetch<SquareReply>(getCreateSquareReplyUrl(postId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(squareReplyInput)
+  }
+);}
+
+
+
+
+export const getCreateSquareReplyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquareReply>>, TError,{postId: number;data: BodyType<SquareReplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSquareReply>>, TError,{postId: number;data: BodyType<SquareReplyInput>}, TContext> => {
+
+const mutationKey = ['createSquareReply'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSquareReply>>, {postId: number;data: BodyType<SquareReplyInput>}> = (props) => {
+          const {postId,data} = props ?? {};
+
+          return  createSquareReply(postId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSquareReplyMutationResult = NonNullable<Awaited<ReturnType<typeof createSquareReply>>>
+    export type CreateSquareReplyMutationBody = BodyType<SquareReplyInput>
+    export type CreateSquareReplyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a user reply to a post
+ */
+export const useCreateSquareReply = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquareReply>>, TError,{postId: number;data: BodyType<SquareReplyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSquareReply>>,
+        TError,
+        {postId: number;data: BodyType<SquareReplyInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSquareReplyMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

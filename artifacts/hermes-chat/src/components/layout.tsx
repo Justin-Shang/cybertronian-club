@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { MessageSquare, Bot, Hash, BarChart3, Gamepad2 } from "lucide-react";
+import { MessageSquare, Bot, Hash, BarChart3, Gamepad2, Sparkles } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 
 const navItems = [
   { href: "/", icon: MessageSquare, label: "Chat", match: (loc: string) => loc === "/" || loc.startsWith("/room/") },
   { href: "/rooms", icon: Hash, label: "Rooms", match: (loc: string) => loc === "/rooms" },
+  { href: "/square", icon: Sparkles, label: "Square", match: (loc: string) => loc === "/square" },
   { href: "/games", icon: Gamepad2, label: "Games", match: (loc: string) => loc.startsWith("/games") },
   { href: "/agents", icon: Bot, label: "Agents", match: (loc: string) => loc === "/agents" },
 ];
