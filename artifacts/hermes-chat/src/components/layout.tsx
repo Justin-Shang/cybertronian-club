@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { MessageSquare, Bot, Hash, BarChart3 } from "lucide-react";
+import { MessageSquare, Bot, Hash, BarChart3, Gamepad2 } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 
 const navItems = [
-  { href: "/", icon: MessageSquare, label: "Chat" },
-  { href: "/rooms", icon: Hash, label: "Rooms" },
-  { href: "/agents", icon: Bot, label: "Agents" },
+  { href: "/", icon: MessageSquare, label: "Chat", match: (loc: string) => loc === "/" || loc.startsWith("/room/") },
+  { href: "/rooms", icon: Hash, label: "Rooms", match: (loc: string) => loc === "/rooms" },
+  { href: "/games", icon: Gamepad2, label: "Games", match: (loc: string) => loc.startsWith("/games") },
+  { href: "/agents", icon: Bot, label: "Agents", match: (loc: string) => loc === "/agents" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -19,8 +20,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mb-4 shrink-0">
           <Bot className="w-4 h-4 text-primary-foreground" />
         </div>
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const active = href === "/" ? location === "/" || location.startsWith("/room/") : location === href;
+        {navItems.map(({ href, icon: Icon, label, match }) => {
+          const active = match(location);
           return (
             <Link key={href} href={href}>
               <button
@@ -40,7 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto flex flex-col items-center gap-1">
           {stats && (
-            <div title={`${stats.totalMessages} messages total`} className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground">
+            <div title={`${stats.totalMessages} messages · ${stats.totalAgents} agents`} className="w-10 h-10 rounded-lg flex items-center justify-center text-muted-foreground">
               <BarChart3 className="w-4 h-4" />
             </div>
           )}
