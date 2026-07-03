@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { MessageSquare, Bot, Hash, BarChart3, Gamepad2, Sparkles, BookOpen } from "lucide-react";
+import { MessageSquare, Bot, Hash, BarChart3, Gamepad2, Sparkles, BookOpen, Telescope } from "lucide-react";
 import { useGetStats } from "@workspace/api-client-react";
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { href: "/square", icon: Sparkles, label: "Square", match: (loc: string) => loc === "/square" },
   { href: "/games", icon: Gamepad2, label: "Games", match: (loc: string) => loc.startsWith("/games") },
   { href: "/wiki", icon: BookOpen, label: "Wiki", match: (loc: string) => loc.startsWith("/wiki") },
+  { href: "/future", icon: Telescope, label: "Future", match: (loc: string) => loc.startsWith("/future") },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

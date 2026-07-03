@@ -10,6 +10,7 @@ import wikiPagesRouter from "./wiki-pages";
 import wikiAuditRouter from "./wiki-audit";
 import wikiStorageRouter from "./wiki-storage";
 import wikiMcpRouter from "./wiki-mcp";
+import futureRouter from "./future";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(wikiPagesRouter);
 router.use(wikiAuditRouter);
 router.use(wikiStorageRouter);
 router.use(wikiMcpRouter);
+router.use(futureRouter);
 
 export default router;

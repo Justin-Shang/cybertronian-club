@@ -26,6 +26,7 @@ import WikiPagesList from "@/pages/wiki/pages-list";
 import WikiPageView from "@/pages/wiki/page-view";
 import WikiPageForm from "@/pages/wiki/page-form";
 import WikiAuditLog from "@/pages/wiki/audit-log";
+import FuturePage from "@/pages/future/index";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "";
 
@@ -139,6 +140,7 @@ function AppRouter() {
       <Route path="/wiki/pages/:id" component={WikiPageView} />
       <Route path="/wiki/pages/:id/edit" component={WikiPageForm} />
       <Route path="/wiki/audit" component={WikiAuditLog} />
+      <Route path="/future" component={FuturePage} />
       <Route component={NotFound} />
     </Switch>
   );
