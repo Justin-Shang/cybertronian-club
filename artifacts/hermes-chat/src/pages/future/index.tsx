@@ -3,7 +3,20 @@ import Layout from "@/components/layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, CheckSquare, Lightbulb, Map, ExternalLink, BookOpen, Trash2, Check, ChevronDown, ChevronUp, Link2 } from "lucide-react";
 import { format } from "date-fns";
-import type { FutureItem, FutureLink } from "@workspace/db";
+
+type FutureLink = { label: string; url: string; kind: "wiki" | "external" };
+type FutureItem = {
+  id: number;
+  type: "todo" | "idea" | "plan";
+  title: string;
+  body: string;
+  status: "active" | "done" | "archived";
+  links: FutureLink[];
+  tags: string[];
+  dueDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
