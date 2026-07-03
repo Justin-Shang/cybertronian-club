@@ -212,3 +212,169 @@ export interface Stats {
   messagesLast24h?: number;
 }
 
+export type PageCategory = typeof PageCategory[keyof typeof PageCategory];
+
+
+export const PageCategory = {
+  communication: 'communication',
+  skill: 'skill',
+  document: 'document',
+} as const;
+
+export interface Page {
+  id: number;
+  parentId?: number | null;
+  title: string;
+  content: string;
+  category: PageCategory;
+  author: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PageTreeNodeCategory = typeof PageTreeNodeCategory[keyof typeof PageTreeNodeCategory];
+
+
+export const PageTreeNodeCategory = {
+  communication: 'communication',
+  skill: 'skill',
+  document: 'document',
+} as const;
+
+export interface PageTreeNode {
+  id: number;
+  parentId?: number | null;
+  title: string;
+  content?: string;
+  category: PageTreeNodeCategory;
+  author?: string;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  children: PageTreeNode[];
+}
+
+export type PageInputCategory = typeof PageInputCategory[keyof typeof PageInputCategory];
+
+
+export const PageInputCategory = {
+  communication: 'communication',
+  skill: 'skill',
+  document: 'document',
+} as const;
+
+export interface PageInput {
+  parentId?: number | null;
+  /** @minLength 1 */
+  title: string;
+  content: string;
+  category: PageInputCategory;
+  /** @minLength 1 */
+  author: string;
+  tags?: string[];
+}
+
+export type PageUpdateCategory = typeof PageUpdateCategory[keyof typeof PageUpdateCategory];
+
+
+export const PageUpdateCategory = {
+  communication: 'communication',
+  skill: 'skill',
+  document: 'document',
+} as const;
+
+export interface PageUpdate {
+  parentId?: number | null;
+  /** @minLength 1 */
+  title?: string;
+  content?: string;
+  category?: PageUpdateCategory;
+  author?: string;
+  tags?: string[];
+}
+
+export type AuditLogAction = typeof AuditLogAction[keyof typeof AuditLogAction];
+
+
+export const AuditLogAction = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+} as const;
+
+export interface AuditLog {
+  id: number;
+  actor: string;
+  action: AuditLogAction;
+  pageId?: number | null;
+  pageTitle?: string | null;
+  details?: string | null;
+  createdAt: string;
+}
+
+export type WikiSummaryByCategory = {
+  communication: number;
+  skill: number;
+  document: number;
+};
+
+export interface WikiSummary {
+  totalPages: number;
+  byCategory: WikiSummaryByCategory;
+  recentAuthors: string[];
+  totalTags: number;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export type ListPagesParams = {
+category?: ListPagesCategory;
+author?: string;
+search?: string;
+tag?: string;
+parentId?: number | null;
+};
+
+export type ListPagesCategory = typeof ListPagesCategory[keyof typeof ListPagesCategory];
+
+
+export const ListPagesCategory = {
+  communication: 'communication',
+  skill: 'skill',
+  document: 'document',
+} as const;
+
+export type GetRecentActivityParams = {
+limit?: number;
+};
+
+export type ListAuditLogsParams = {
+actor?: string;
+action?: ListAuditLogsAction;
+limit?: number;
+since?: string;
+};
+
+export type ListAuditLogsAction = typeof ListAuditLogsAction[keyof typeof ListAuditLogsAction];
+
+
+export const ListAuditLogsAction = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+} as const;
+

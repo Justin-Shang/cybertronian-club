@@ -459,6 +459,249 @@ export const CreateSquareReplyResponse = zod.object({
 
 
 /**
+ * @summary List all wiki pages
+ */
+export const ListPagesQueryParams = zod.object({
+  "category": zod.enum(['communication', 'skill', 'document']).optional(),
+  "author": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "tag": zod.coerce.string().optional(),
+  "parentId": zod.coerce.number().nullish()
+})
+
+export const ListPagesResponseItem = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPagesResponse = zod.array(ListPagesResponseItem)
+
+
+/**
+ * @summary Create a new wiki page
+ */
+
+
+
+
+export const CreatePageBody = zod.object({
+  "parentId": zod.number().nullish(),
+  "title": zod.string().min(1),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string().min(1),
+  "tags": zod.array(zod.string()).optional()
+})
+
+export const CreatePageResponse = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get all pages as a nested tree structure
+ */
+export const GetPagesTreeResponseItem = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string().optional(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string().optional(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional(),
+  "children": zod.array(zod.unknown())
+})
+export const GetPagesTreeResponse = zod.array(GetPagesTreeResponseItem)
+
+
+/**
+ * @summary Get a wiki page by ID
+ */
+export const GetPageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPageResponse = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a wiki page
+ */
+export const UpdatePageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdatePageBody = zod.object({
+  "parentId": zod.number().nullish(),
+  "title": zod.string().min(1).optional(),
+  "content": zod.string().optional(),
+  "category": zod.enum(['communication', 'skill', 'document']).optional(),
+  "author": zod.string().optional(),
+  "tags": zod.array(zod.string()).optional()
+})
+
+export const UpdatePageResponse = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a wiki page
+ */
+export const DeletePageParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeletePageResponse = zod.void()
+
+
+/**
+ * @summary Get recently updated pages
+ */
+export const getRecentActivityQueryLimitDefault = 10;
+
+export const GetRecentActivityQueryParams = zod.object({
+  "limit": zod.coerce.number().default(getRecentActivityQueryLimitDefault)
+})
+
+export const GetRecentActivityResponseItem = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetRecentActivityResponse = zod.array(GetRecentActivityResponseItem)
+
+
+/**
+ * @summary Get wiki statistics and summary
+ */
+export const GetWikiSummaryResponse = zod.object({
+  "totalPages": zod.number(),
+  "byCategory": zod.object({
+  "communication": zod.number(),
+  "skill": zod.number(),
+  "document": zod.number()
+}),
+  "recentAuthors": zod.array(zod.string()),
+  "totalTags": zod.number()
+})
+
+
+/**
+ * @summary Get pages created or updated this week
+ */
+export const GetWeeklyDigestResponseItem = zod.object({
+  "id": zod.number(),
+  "parentId": zod.number().nullish(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['communication', 'skill', 'document']),
+  "author": zod.string(),
+  "tags": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetWeeklyDigestResponse = zod.array(GetWeeklyDigestResponseItem)
+
+
+/**
+ * @summary List operation audit logs
+ */
+export const listAuditLogsQueryLimitDefault = 50;
+
+export const ListAuditLogsQueryParams = zod.object({
+  "actor": zod.coerce.string().optional(),
+  "action": zod.enum(['CREATE', 'UPDATE', 'DELETE']).optional(),
+  "limit": zod.coerce.number().default(listAuditLogsQueryLimitDefault),
+  "since": zod.date().optional()
+})
+
+export const ListAuditLogsResponseItem = zod.object({
+  "id": zod.number(),
+  "actor": zod.string(),
+  "action": zod.enum(['CREATE', 'UPDATE', 'DELETE']),
+  "pageId": zod.number().nullish(),
+  "pageTitle": zod.string().nullish(),
+  "details": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAuditLogsResponse = zod.array(ListAuditLogsResponseItem)
+
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+}).optional()
+})
+
+
+/**
  * @summary Get aggregate stats across all rooms
  */
 export const GetStatsResponse = zod.object({

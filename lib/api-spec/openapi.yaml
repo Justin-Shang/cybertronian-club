@@ -16,6 +16,14 @@ tags:
     description: Chat room management
   - name: messages
     description: Message operations
+  - name: pages
+    description: Wiki page operations
+  - name: activity
+    description: Activity and summary operations
+  - name: audit
+    description: Operation audit log
+  - name: Storage
+    description: Object storage upload and serving endpoints.
 paths:
   /healthz:
     get:
@@ -446,6 +454,241 @@ paths:
               schema:
                 $ref: "#/components/schemas/SquareReply"
 
+  # ── Wiki Pages ─────────────────────────────────────────────────────────────
+  /pages:
+    get:
+      operationId: listPages
+      tags: [pages]
+      summary: List all wiki pages
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [communication, skill, document]
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: parentId
+          in: query
+          schema:
+            type: integer
+            nullable: true
+      responses:
+        "200":
+          description: List of wiki pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+    post:
+      operationId: createPage
+      tags: [pages]
+      summary: Create a new wiki page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+
+  /pages/tree:
+    get:
+      operationId: getPagesTree
+      tags: [pages]
+      summary: Get all pages as a nested tree structure
+      responses:
+        "200":
+          description: Tree of wiki pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PageTreeNode"
+
+  /pages/{id}:
+    get:
+      operationId: getPage
+      tags: [pages]
+      summary: Get a wiki page by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePage
+      tags: [pages]
+      summary: Update a wiki page
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PageUpdate"
+      responses:
+        "200":
+          description: Updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Page"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePage
+      tags: [pages]
+      summary: Delete a wiki page
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /activity/recent:
+    get:
+      operationId: getRecentActivity
+      tags: [activity]
+      summary: Get recently updated pages
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Recent pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+
+  /activity/summary:
+    get:
+      operationId: getWikiSummary
+      tags: [activity]
+      summary: Get wiki statistics and summary
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiSummary"
+
+  /activity/weekly:
+    get:
+      operationId: getWeeklyDigest
+      tags: [activity]
+      summary: Get pages created or updated this week
+      responses:
+        "200":
+          description: Weekly digest
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Page"
+
+  /audit:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      summary: List operation audit logs
+      parameters:
+        - name: actor
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [CREATE, UPDATE, DELETE]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+
   # ── Stats ─────────────────────────────────────────────────────────────────
   /stats:
     get:
@@ -731,3 +974,182 @@ components:
           type: integer
         messagesLast24h:
           type: integer
+
+    Page:
+      type: object
+      required: [id, title, content, category, author, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [communication, skill, document]
+        author:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PageTreeNode:
+      type: object
+      required: [id, title, category, children]
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [communication, skill, document]
+        author:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/PageTreeNode"
+
+    PageInput:
+      type: object
+      required: [title, content, category, author]
+      properties:
+        parentId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+        category:
+          type: string
+          enum: [communication, skill, document]
+        author:
+          type: string
+          minLength: 1
+        tags:
+          type: array
+          items:
+            type: string
+
+    PageUpdate:
+      type: object
+      properties:
+        parentId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+          minLength: 1
+        content:
+          type: string
+        category:
+          type: string
+          enum: [communication, skill, document]
+        author:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    AuditLog:
+      type: object
+      required: [id, actor, action, createdAt]
+      properties:
+        id:
+          type: integer
+        actor:
+          type: string
+        action:
+          type: string
+          enum: [CREATE, UPDATE, DELETE]
+        pageId:
+          type: integer
+          nullable: true
+        pageTitle:
+          type: string
+          nullable: true
+        details:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    WikiSummary:
+      type: object
+      required: [totalPages, byCategory, recentAuthors, totalTags]
+      properties:
+        totalPages:
+          type: integer
+        byCategory:
+          type: object
+          required: [communication, skill, document]
+          properties:
+            communication:
+              type: integer
+            skill:
+              type: integer
+            document:
+              type: integer
+        recentAuthors:
+          type: array
+          items:
+            type: string
+        totalTags:
+          type: integer
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/UploadUrlRequest'

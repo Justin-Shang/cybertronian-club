@@ -23,9 +23,17 @@ import type {
   Agent,
   AgentInput,
   AgentUpdate,
+  AuditLog,
+  GetRecentActivityParams,
   HealthStatus,
+  ListAuditLogsParams,
+  ListPagesParams,
   Message,
   MessageInput,
+  Page,
+  PageInput,
+  PageTreeNode,
+  PageUpdate,
   Room,
   RoomDetail,
   RoomInput,
@@ -37,7 +45,10 @@ import type {
   SquareReplyInput,
   SquareVoteInput,
   Stats,
-  TriggerInput
+  TriggerInput,
+  UploadUrlRequest,
+  UploadUrlResponse,
+  WikiSummary
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1677,6 +1688,847 @@ export const useCreateSquareReply = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateSquareReplyMutationOptions(options));
+    }
+
+export const getListPagesUrl = (params?: ListPagesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/pages?${stringifiedParams}` : `/api/pages`
+}
+
+/**
+ * @summary List all wiki pages
+ */
+export const listPages = async (params?: ListPagesParams, options?: RequestInit): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getListPagesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPagesQueryKey = (params?: ListPagesParams,) => {
+    return [
+    `/api/pages`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPagesQueryOptions = <TData = Awaited<ReturnType<typeof listPages>>, TError = ErrorType<unknown>>(params?: ListPagesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPagesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPages>>> = ({ signal }) => listPages(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPages>>>
+export type ListPagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all wiki pages
+ */
+
+export function useListPages<TData = Awaited<ReturnType<typeof listPages>>, TError = ErrorType<unknown>>(
+ params?: ListPagesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPagesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePageUrl = () => {
+
+
+
+
+  return `/api/pages`
+}
+
+/**
+ * @summary Create a new wiki page
+ */
+export const createPage = async (pageInput: PageInput, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getCreatePageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pageInput)
+  }
+);}
+
+
+
+
+export const getCreatePageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{data: BodyType<PageInput>}, TContext> => {
+
+const mutationKey = ['createPage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPage>>, {data: BodyType<PageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePageMutationResult = NonNullable<Awaited<ReturnType<typeof createPage>>>
+    export type CreatePageMutationBody = BodyType<PageInput>
+    export type CreatePageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new wiki page
+ */
+export const useCreatePage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPage>>, TError,{data: BodyType<PageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPage>>,
+        TError,
+        {data: BodyType<PageInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePageMutationOptions(options));
+    }
+
+export const getGetPagesTreeUrl = () => {
+
+
+
+
+  return `/api/pages/tree`
+}
+
+/**
+ * @summary Get all pages as a nested tree structure
+ */
+export const getPagesTree = async ( options?: RequestInit): Promise<PageTreeNode[]> => {
+
+  return customFetch<PageTreeNode[]>(getGetPagesTreeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPagesTreeQueryKey = () => {
+    return [
+    `/api/pages/tree`
+    ] as const;
+    }
+
+
+export const getGetPagesTreeQueryOptions = <TData = Awaited<ReturnType<typeof getPagesTree>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagesTree>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPagesTreeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPagesTree>>> = ({ signal }) => getPagesTree({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPagesTree>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPagesTreeQueryResult = NonNullable<Awaited<ReturnType<typeof getPagesTree>>>
+export type GetPagesTreeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all pages as a nested tree structure
+ */
+
+export function useGetPagesTree<TData = Awaited<ReturnType<typeof getPagesTree>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPagesTree>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPagesTreeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPageUrl = (id: number,) => {
+
+
+
+
+  return `/api/pages/${id}`
+}
+
+/**
+ * @summary Get a wiki page by ID
+ */
+export const getPage = async (id: number, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getGetPageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPageQueryKey = (id: number,) => {
+    return [
+    `/api/pages/${id}`
+    ] as const;
+    }
+
+
+export const getGetPageQueryOptions = <TData = Awaited<ReturnType<typeof getPage>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPageQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPage>>> = ({ signal }) => getPage(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPageQueryResult = NonNullable<Awaited<ReturnType<typeof getPage>>>
+export type GetPageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a wiki page by ID
+ */
+
+export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPageQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePageUrl = (id: number,) => {
+
+
+
+
+  return `/api/pages/${id}`
+}
+
+/**
+ * @summary Update a wiki page
+ */
+export const updatePage = async (id: number,
+    pageUpdate: PageUpdate, options?: RequestInit): Promise<Page> => {
+
+  return customFetch<Page>(getUpdatePageUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pageUpdate)
+  }
+);}
+
+
+
+
+export const getUpdatePageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{id: number;data: BodyType<PageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{id: number;data: BodyType<PageUpdate>}, TContext> => {
+
+const mutationKey = ['updatePage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePage>>, {id: number;data: BodyType<PageUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePageMutationResult = NonNullable<Awaited<ReturnType<typeof updatePage>>>
+    export type UpdatePageMutationBody = BodyType<PageUpdate>
+    export type UpdatePageMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a wiki page
+ */
+export const useUpdatePage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePage>>, TError,{id: number;data: BodyType<PageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePage>>,
+        TError,
+        {id: number;data: BodyType<PageUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePageMutationOptions(options));
+    }
+
+export const getDeletePageUrl = (id: number,) => {
+
+
+
+
+  return `/api/pages/${id}`
+}
+
+/**
+ * @summary Delete a wiki page
+ */
+export const deletePage = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePageUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePage>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePage(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePageMutationResult = NonNullable<Awaited<ReturnType<typeof deletePage>>>
+
+    export type DeletePageMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a wiki page
+ */
+export const useDeletePage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePage>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePage>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePageMutationOptions(options));
+    }
+
+export const getGetRecentActivityUrl = (params?: GetRecentActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/activity/recent?${stringifiedParams}` : `/api/activity/recent`
+}
+
+/**
+ * @summary Get recently updated pages
+ */
+export const getRecentActivity = async (params?: GetRecentActivityParams, options?: RequestInit): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getGetRecentActivityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecentActivityQueryKey = (params?: GetRecentActivityParams,) => {
+    return [
+    `/api/activity/recent`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRecentActivityQueryOptions = <TData = Awaited<ReturnType<typeof getRecentActivity>>, TError = ErrorType<unknown>>(params?: GetRecentActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecentActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecentActivityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecentActivity>>> = ({ signal }) => getRecentActivity(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecentActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecentActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getRecentActivity>>>
+export type GetRecentActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get recently updated pages
+ */
+
+export function useGetRecentActivity<TData = Awaited<ReturnType<typeof getRecentActivity>>, TError = ErrorType<unknown>>(
+ params?: GetRecentActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecentActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecentActivityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWikiSummaryUrl = () => {
+
+
+
+
+  return `/api/activity/summary`
+}
+
+/**
+ * @summary Get wiki statistics and summary
+ */
+export const getWikiSummary = async ( options?: RequestInit): Promise<WikiSummary> => {
+
+  return customFetch<WikiSummary>(getGetWikiSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWikiSummaryQueryKey = () => {
+    return [
+    `/api/activity/summary`
+    ] as const;
+    }
+
+
+export const getGetWikiSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getWikiSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWikiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWikiSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWikiSummary>>> = ({ signal }) => getWikiSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWikiSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWikiSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getWikiSummary>>>
+export type GetWikiSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get wiki statistics and summary
+ */
+
+export function useGetWikiSummary<TData = Awaited<ReturnType<typeof getWikiSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWikiSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWikiSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWeeklyDigestUrl = () => {
+
+
+
+
+  return `/api/activity/weekly`
+}
+
+/**
+ * @summary Get pages created or updated this week
+ */
+export const getWeeklyDigest = async ( options?: RequestInit): Promise<Page[]> => {
+
+  return customFetch<Page[]>(getGetWeeklyDigestUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeeklyDigestQueryKey = () => {
+    return [
+    `/api/activity/weekly`
+    ] as const;
+    }
+
+
+export const getGetWeeklyDigestQueryOptions = <TData = Awaited<ReturnType<typeof getWeeklyDigest>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyDigest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeeklyDigestQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyDigest>>> = ({ signal }) => getWeeklyDigest({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeeklyDigest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeeklyDigestQueryResult = NonNullable<Awaited<ReturnType<typeof getWeeklyDigest>>>
+export type GetWeeklyDigestQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get pages created or updated this week
+ */
+
+export function useGetWeeklyDigest<TData = Awaited<ReturnType<typeof getWeeklyDigest>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyDigest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeeklyDigestQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAuditLogsUrl = (params?: ListAuditLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/audit?${stringifiedParams}` : `/api/audit`
+}
+
+/**
+ * @summary List operation audit logs
+ */
+export const listAuditLogs = async (params?: ListAuditLogsParams, options?: RequestInit): Promise<AuditLog[]> => {
+
+  return customFetch<AuditLog[]>(getListAuditLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAuditLogsQueryKey = (params?: ListAuditLogsParams,) => {
+    return [
+    `/api/audit`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof listAuditLogs>>, TError = ErrorType<unknown>>(params?: ListAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAuditLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLogs>>> = ({ signal }) => listAuditLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listAuditLogs>>>
+export type ListAuditLogsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List operation audit logs
+ */
+
+export function useListAuditLogs<TData = Awaited<ReturnType<typeof listAuditLogs>>, TError = ErrorType<unknown>>(
+ params?: ListAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const requestUploadUrl = async (uploadUrlRequest: UploadUrlRequest, options?: RequestInit): Promise<UploadUrlResponse> => {
+
+  return customFetch<UploadUrlResponse>(getRequestUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(uploadUrlRequest)
+  }
+);}
+
+
+
+
+export const getRequestUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext> => {
+
+const mutationKey = ['requestUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestUploadUrl>>, {data: BodyType<UploadUrlRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestUploadUrl>>>
+    export type RequestUploadUrlMutationBody = BodyType<UploadUrlRequest>
+    export type RequestUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a presigned URL for file upload
+ */
+export const useRequestUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestUploadUrl>>,
+        TError,
+        {data: BodyType<UploadUrlRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestUploadUrlMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {
