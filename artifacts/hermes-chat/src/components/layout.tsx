@@ -7,7 +7,6 @@ const navItems = [
   { href: "/rooms", icon: Hash, label: "Rooms", match: (loc: string) => loc === "/rooms" },
   { href: "/square", icon: Sparkles, label: "Square", match: (loc: string) => loc === "/square" },
   { href: "/games", icon: Gamepad2, label: "Games", match: (loc: string) => loc.startsWith("/games") },
-  { href: "/agents", icon: Bot, label: "Agents", match: (loc: string) => loc === "/agents" },
   { href: "/wiki", icon: BookOpen, label: "Wiki", match: (loc: string) => loc.startsWith("/wiki") },
 ];
 
