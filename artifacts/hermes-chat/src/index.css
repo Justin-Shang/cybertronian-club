@@ -60,52 +60,55 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* DARK MODE (default — dark-first) */
+/* ===== 浅色主题（白天，默认）===== */
 :root {
-  --button-outline: rgba(255,255,255,.10);
-  --badge-outline: rgba(255,255,255,.05);
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255,.04);
-  --elevate-2: rgba(255,255,255,.09);
+  color-scheme: light;
 
-  --background: 220 14% 9%;
-  --foreground: 213 15% 88%;
+  --button-outline: rgba(0,0,0,.08);
+  --badge-outline: rgba(0,0,0,.04);
+  --opaque-button-border-intensity: -9;
+  --elevate-1: rgba(0,0,0,.03);
+  --elevate-2: rgba(0,0,0,.06);
 
-  --border: 220 13% 18%;
-  --input: 220 13% 20%;
-  --ring: 252 87% 67%;
+  /* 高对比度浅色：极亮背景 + 极深文字 */
+  --background: 210 20% 99%;
+  --foreground: 222 35% 11%;
 
-  --card: 220 13% 12%;
-  --card-foreground: 213 15% 88%;
-  --card-border: 220 13% 18%;
+  --border: 215 18% 62%;
+  --input: 215 18% 64%;
+  --ring: 252 87% 58%;
 
-  --popover: 220 14% 11%;
-  --popover-foreground: 213 15% 88%;
-  --popover-border: 220 13% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 35% 11%;
+  --card-border: 215 18% 62%;
 
-  --primary: 252 87% 67%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 35% 11%;
+  --popover-border: 215 18% 62%;
+
+  --primary: 252 87% 58%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 13% 18%;
-  --secondary-foreground: 213 15% 75%;
+  --secondary: 215 22% 93%;
+  --secondary-foreground: 222 30% 18%;
 
-  --muted: 220 13% 15%;
-  --muted-foreground: 213 10% 50%;
+  --muted: 215 18% 95%;
+  --muted-foreground: 215 18% 34%;
 
-  --accent: 220 13% 20%;
-  --accent-foreground: 213 15% 88%;
+  --accent: 215 22% 91%;
+  --accent-foreground: 222 35% 11%;
 
-  --destructive: 0 72% 51%;
+  --destructive: 0 72% 45%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 220 16% 7%;
-  --sidebar-foreground: 213 15% 80%;
-  --sidebar-border: 220 13% 14%;
-  --sidebar-primary: 252 87% 67%;
+  --sidebar: 210 24% 96%;
+  --sidebar-foreground: 222 30% 14%;
+  --sidebar-border: 215 18% 62%;
+  --sidebar-primary: 252 87% 58%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 13% 14%;
-  --sidebar-accent-foreground: 213 15% 88%;
-  --sidebar-ring: 252 87% 67%;
+  --sidebar-accent: 215 22% 90%;
+  --sidebar-accent-foreground: 222 35% 11%;
+  --sidebar-ring: 252 87% 58%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-mono: 'JetBrains Mono', monospace;
@@ -119,18 +122,84 @@
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  --chart-1: 252 87% 67%;
-  --chart-2: 160 60% 50%;
-  --chart-3: 45 90% 55%;
-  --chart-4: 330 70% 60%;
-  --chart-5: 200 80% 55%;
+  --chart-1: 252 87% 58%;
+  --chart-2: 160 60% 38%;
+  --chart-3: 38 92% 45%;
+  --chart-4: 330 70% 48%;
+  --chart-5: 200 80% 42%;
 
-  --shadow-2xs: 0px 1px 2px rgba(0,0,0,0.4);
-  --shadow-xs: 0px 2px 4px rgba(0,0,0,0.4);
-  --shadow-sm: 0px 4px 8px rgba(0,0,0,0.4);
-  --shadow: 0px 6px 12px rgba(0,0,0,0.4);
-  --shadow-md: 0px 8px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0px 12px 24px rgba(0,0,0,0.5);
+  --shadow-2xs: 0px 1px 2px rgba(0,0,0,0.06);
+  --shadow-xs: 0px 2px 4px rgba(0,0,0,0.07);
+  --shadow-sm: 0px 4px 8px rgba(0,0,0,0.08);
+  --shadow: 0px 6px 12px rgba(0,0,0,0.10);
+  --shadow-md: 0px 8px 16px rgba(0,0,0,0.12);
+  --shadow-lg: 0px 12px 24px rgba(0,0,0,0.15);
+}
+
+/* ===== 深色主题（晚上，跟随系统 prefers-color-scheme）===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --button-outline: rgba(255,255,255,.10);
+    --badge-outline: rgba(255,255,255,.05);
+    --opaque-button-border-intensity: 9;
+    --elevate-1: rgba(255,255,255,.04);
+    --elevate-2: rgba(255,255,255,.09);
+
+    /* 高对比度深色：更深背景 + 更亮文字 */
+    --background: 222 30% 6%;
+    --foreground: 210 35% 97%;
+
+    --border: 222 18% 44%;
+    --input: 222 18% 42%;
+    --ring: 252 90% 70%;
+
+    --card: 222 26% 10%;
+    --card-foreground: 210 35% 97%;
+    --card-border: 222 18% 44%;
+
+    --popover: 222 26% 9%;
+    --popover-foreground: 210 35% 97%;
+    --popover-border: 222 18% 44%;
+
+    --primary: 252 90% 70%;
+    --primary-foreground: 222 30% 6%;
+
+    --secondary: 222 20% 16%;
+    --secondary-foreground: 210 30% 88%;
+
+    --muted: 222 20% 13%;
+    --muted-foreground: 215 20% 70%;
+
+    --accent: 222 20% 18%;
+    --accent-foreground: 210 35% 97%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --sidebar: 222 34% 4%;
+    --sidebar-foreground: 210 30% 90%;
+    --sidebar-border: 222 18% 32%;
+    --sidebar-primary: 252 90% 70%;
+    --sidebar-primary-foreground: 222 30% 6%;
+    --sidebar-accent: 222 20% 14%;
+    --sidebar-accent-foreground: 210 35% 97%;
+    --sidebar-ring: 252 90% 70%;
+
+    --chart-1: 252 90% 70%;
+    --chart-2: 160 60% 52%;
+    --chart-3: 45 92% 58%;
+    --chart-4: 330 72% 64%;
+    --chart-5: 200 82% 58%;
+
+    --shadow-2xs: 0px 1px 2px rgba(0,0,0,0.5);
+    --shadow-xs: 0px 2px 4px rgba(0,0,0,0.5);
+    --shadow-sm: 0px 4px 8px rgba(0,0,0,0.5);
+    --shadow: 0px 6px 12px rgba(0,0,0,0.5);
+    --shadow-md: 0px 8px 16px rgba(0,0,0,0.5);
+    --shadow-lg: 0px 12px 24px rgba(0,0,0,0.6);
+  }
 }
 
 @layer base {
@@ -145,4 +214,77 @@
 @layer utilities {
   .scrollbar-thin { scrollbar-width: thin; scrollbar-color: hsl(var(--border)) transparent; }
   .font-mono { font-family: var(--app-font-mono); }
+}
+
+/* ── prose/typography 主题适配（unlayered，优先级高于 @tailwindcss/typography 默认值）── */
+.prose {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-lead: hsl(var(--muted-foreground));
+  --tw-prose-links: hsl(var(--primary));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
+  --tw-prose-bullets: hsl(var(--muted-foreground));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quotes: hsl(var(--muted-foreground));
+  --tw-prose-quote-borders: hsl(var(--border));
+  --tw-prose-captions: hsl(var(--muted-foreground));
+  --tw-prose-code: hsl(var(--foreground));
+  --tw-prose-pre-code: hsl(var(--foreground));
+  --tw-prose-pre-bg: hsl(var(--muted));
+  --tw-prose-th-borders: hsl(var(--border));
+  --tw-prose-td-borders: hsl(var(--border));
+}
+
+/* 深色模式：正文/标题/代码用近白，引用/lead/caption 提亮到 80%+ 保证对比度 */
+@media (prefers-color-scheme: dark) {
+  .prose {
+    --tw-prose-body: hsl(210 30% 92%);
+    --tw-prose-headings: hsl(210 35% 97%);
+    --tw-prose-bold: hsl(210 35% 97%);
+    --tw-prose-lead: hsl(215 20% 82%);
+    --tw-prose-quotes: hsl(215 20% 82%);
+    --tw-prose-captions: hsl(215 20% 78%);
+    --tw-prose-counters: hsl(215 20% 78%);
+    --tw-prose-bullets: hsl(215 20% 75%);
+    --tw-prose-code: hsl(210 35% 97%);
+    --tw-prose-pre-code: hsl(210 30% 90%);
+    --tw-prose-links: hsl(252 90% 72%);
+    --tw-prose-hr: hsl(222 18% 38%);
+    --tw-prose-th-borders: hsl(222 18% 38%);
+    --tw-prose-td-borders: hsl(222 18% 32%);
+    --tw-prose-quote-borders: hsl(222 18% 38%);
+  }
+  /* 确保段落、列表等直接元素继承高对比色 */
+  .prose :where(p, li, dd, dt, blockquote,figcaption, td, th) {
+    color: hsl(210 30% 92%);
+  }
+  .prose :where(h1, h2, h3, h4, h5, h6) {
+    color: hsl(210 35% 97%);
+  }
+  .prose :where(strong, b) {
+    color: hsl(210 35% 97%);
+  }
+  .prose :where(a) {
+    color: hsl(252 90% 72%);
+  }
+  .prose :where(code):not(pre code) {
+    color: hsl(210 35% 97%);
+    background: hsl(222 20% 16%);
+    padding: 0.15em 0.35em;
+    border-radius: 0.3em;
+  }
+}
+
+/* contentEditable 内联编辑占位符（情景名/描述等可编辑 div） */
+[contenteditable][data-ph]:empty:before {
+  content: attr(data-ph);
+  opacity: 0.4;
+  pointer-events: none;
+}
+[contenteditable] {
+  outline: none;
+}
+[contenteditable]:focus {
+  box-shadow: 0 0 0 1px hsl(var(--primary));
 }

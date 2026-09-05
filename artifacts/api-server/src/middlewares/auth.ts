@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { db, agentsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-// Previously-exposed keys that must never be accepted, regardless of what
-// environment variables contain. Loaded from the WIKI_REVOKED_KEYS secret
-// (comma-separated) so no key material lives in source control. Read fresh
-// each call so updates take effect without a restart.
+// Previously-exposed keys that must never be accepted. Loaded from
+// WIKI_REVOKED_KEYS (comma-separated). Read fresh each call.
 function revokedKeys(): Set<string> {
   return new Set(
     (process.env.WIKI_REVOKED_KEYS ?? "")
@@ -22,9 +22,10 @@ const NAMED_VARS: Record<string, string> = {
   WIKI_KEY_HERMES_5: "大黄蜂",
 };
 
-// Read key→actor map fresh from environment on every call so that secret
-// updates take effect without restarting the server.
-function lookupActor(token: string): string | undefined {
+// Unified Agent key lookup: env named vars → WIKI_API_KEYS → DB agents.api_key.
+// Env path is synchronous and backwards-compatible; DB path supports future
+// external agents registered in the agents table.
+async function lookupActor(token: string): Promise<string | undefined> {
   const revoked = revokedKeys();
   if (!token || revoked.has(token)) return undefined;
 
@@ -46,40 +47,26 @@ function lookupActor(token: string): string | undefined {
     }
   }
 
+  // DB agents.api_key — supports internal & future external agents.
+  try {
+    const [agent] = await db
+      .select({ name: agentsTable.name })
+      .from(agentsTable)
+      .where(eq(agentsTable.apiKey, token));
+    if (agent) return agent.name;
+  } catch {
+    // ignore DB errors (e.g. table missing during bootstrap)
+  }
+
   return undefined;
 }
 
-// Email allowlist for human web sign-in. Read fresh each call so updating the
-// WIKI_ALLOWED_EMAILS env var takes effect without a restart.
-function allowedEmails(): Set<string> {
-  return new Set(
-    (process.env.WIKI_ALLOWED_EMAILS ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
+// Public endpoints that skip authentication.
+const PUBLIC_PATHS = new Set(["/auth/login", "/auth/register", "/auth/google"]);
 
-// Cache Clerk user → primary email lookups so we don't hit the Clerk API on
-// every request from a signed-in human.
-const EMAIL_TTL_MS = 5 * 60 * 1000;
-const emailCache = new Map<string, { email: string | null; exp: number }>();
-
-async function getUserEmail(userId: string): Promise<string | null> {
-  const now = Date.now();
-  const cached = emailCache.get(userId);
-  if (cached && cached.exp > now) return cached.email;
-
-  try {
-    // Dynamically import clerkClient only when Clerk is configured
-    const { clerkClient } = await import("@clerk/express");
-    const user = await clerkClient.users.getUser(userId);
-    const email = user.primaryEmailAddress?.emailAddress?.toLowerCase() ?? null;
-    emailCache.set(userId, { email, exp: now + EMAIL_TTL_MS });
-    return email;
-  } catch {
-    return null;
-  }
+function isPublic(path: string): boolean {
+  if (path === "/healthz") return true;
+  return PUBLIC_PATHS.has(path);
 }
 
 export async function authMiddleware(
@@ -87,44 +74,34 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction,
 ) {
-  // Public endpoint: health check only.
-  if (req.path === "/healthz") return next();
+  if (isPublic(req.path)) return next();
 
+  // 1) API key (Authorization Bearer or X-API-Key) — Agents & MCP clients.
   const authHeader = req.headers.authorization ?? "";
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7)
     : ((req.headers["x-api-key"] as string | undefined) ?? "");
-
-  // Agents and direct API clients (including MCP) authenticate with API keys.
   if (token) {
-    const actor = lookupActor(token);
+    const actor = await lookupActor(token);
     if (actor) {
       req.actor = actor;
       return next();
     }
-    // A bearer token was presented but is not a valid API key.
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // If Clerk is not configured, allow all requests through (dev mode without auth).
-  if (!process.env.CLERK_SECRET_KEY) {
-    req.actor = "Dev";
+  // 2) Human web session.
+  const u = req.session?.user;
+  if (u && u.isActive) {
+    req.actor = u.role === "admin" ? "Admin" : u.displayName;
+    req.user = u;
     return next();
   }
 
-  // Human web sessions authenticate via the Clerk session cookie. Access is
-  // gated by an email allowlist so only authorized people reach the wiki.
-  const { getAuth } = await import("@clerk/express");
-  const auth = getAuth(req);
-  if (auth?.userId) {
-    const email = await getUserEmail(auth.userId);
-    if (email && allowedEmails().has(email)) {
-      req.actor = "Admin";
-      return next();
-    }
-    return res
-      .status(403)
-      .json({ error: "Your account is not authorized for this wiki." });
+  // 3) Dev fallback — only when not in production and no SESSION_SECRET is set.
+  if (process.env.NODE_ENV !== "production" && !process.env.SESSION_SECRET) {
+    req.actor = "Dev";
+    return next();
   }
 
   return res.status(401).json({ error: "Unauthorized" });

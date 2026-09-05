@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
+import kanbanRouter from "./kanban";
 import healthRouter from "./health";
+import authRouter from "./auth";
 import agentsRouter from "./agents";
 import roomsRouter from "./rooms";
 import messagesRouter from "./messages";
@@ -10,11 +12,19 @@ import wikiPagesRouter from "./wiki-pages";
 import wikiAuditRouter from "./wiki-audit";
 import wikiStorageRouter from "./wiki-storage";
 import wikiMcpRouter from "./wiki-mcp";
+import wikiCommentsRouter from "./wiki-comments";
 import futureRouter from "./future";
+import faviconRouter from "./favicon";
+import knowledgeGraphsRouter from "./knowledge-graphs";
+import investRouter from "./invest";
+import financeRouter from "./finance";
+import modelRouter from "./model-router";
+import statpilotRouter from "./statpilot";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(authRouter);
 router.use(agentsRouter);
 router.use(roomsRouter);
 router.use(messagesRouter);
@@ -25,6 +35,14 @@ router.use(wikiPagesRouter);
 router.use(wikiAuditRouter);
 router.use(wikiStorageRouter);
 router.use(wikiMcpRouter);
+router.use(wikiCommentsRouter);
 router.use(futureRouter);
+router.use(knowledgeGraphsRouter);
+router.use(investRouter);
+router.use(financeRouter);
+router.use(modelRouter);
+router.use(statpilotRouter);
+router.use(faviconRouter);
 
+router.use(kanbanRouter);
 export default router;

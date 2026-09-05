@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, pagesTable, auditLogsTable } from "@workspace/db";
+import { db, pagesTable, auditLogsTable, knowledgeGraphsTable } from "@workspace/db";
 import { eq, ilike, or, sql, and, gte, isNull } from "drizzle-orm";
 import {
   ListPagesQueryParams,
@@ -10,6 +10,8 @@ import {
   DeletePageParams,
   GetRecentActivityQueryParams,
 } from "@workspace/api-zod";
+import { ingestContent } from "../lib/graph-ingest";
+import crypto from "node:crypto";
 
 const router = Router();
 
@@ -54,6 +56,36 @@ async function writeAudit(
     pageTitle: pageTitle ?? undefined,
     details,
   });
+}
+
+// P0-3: async hook — when a wiki page is created, auto-ingest into graphs
+// whose owner_agent (comma-separated) contains the page author. Fire-and-forget.
+async function triggerGraphIngest(page: PageRow, log?: { info: (obj: unknown, msg: string) => void; error: (obj: unknown, msg: string) => void }) {
+  try {
+    const graphs = await db.select().from(knowledgeGraphsTable);
+    const author = (page.author ?? "").trim();
+    if (!author) return;
+    const matched = graphs.filter((g) => {
+      const owners = (g.ownerAgent ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+      return owners.some((o) => o === author);
+    });
+    if (matched.length === 0) return;
+    const contentHash = crypto.createHash("sha256").update(page.content || "").digest("hex");
+    const generatedAt = (page.createdAt instanceof Date ? page.createdAt : new Date(page.createdAt))
+      .toISOString()
+      .slice(0, 10);
+    for (const g of matched) {
+      // Fire ingest; errors are caught inside ingestContent and logged, never thrown.
+      ingestContent(
+        g.id,
+        { content: page.content || "", contentHash, source: author, pageId: page.id, generatedAt },
+        log as never,
+      ).catch((e) => log?.error?.({ err: e, graphId: g.id }, "ingest hook failed"));
+    }
+    log?.info({ author, graphIds: matched.map((g) => g.id), pageId: page.id }, "graph ingest hook triggered");
+  } catch (err) {
+    log?.error({ err, pageId: page.id }, "triggerGraphIngest failed");
+  }
 }
 
 // GET /pages
@@ -130,6 +162,10 @@ router.post("/pages", async (req, res) => {
       })
       .returning();
     await writeAudit(req.actor ?? "Unknown", "CREATE", page.id, page.title);
+    // P0-3: fire-and-forget graph ingest hook (async, does not block response)
+    setImmediate(() => {
+      triggerGraphIngest(page, req.log).catch(() => { /* swallow; logged inside */ });
+    });
     res.status(201).json(page);
   } catch (err) {
     req.log.error({ err }, "Failed to create page");
@@ -172,6 +208,12 @@ router.patch("/pages/:id", async (req, res) => {
 
     if (!page) { res.status(404).json({ error: "Page not found" }); return; }
     await writeAudit(req.actor ?? "Unknown", "UPDATE", page.id, page.title);
+    // P0-3: also trigger ingest hook on content update (idempotent by contentHash)
+    if (body.content !== undefined) {
+      setImmediate(() => {
+        triggerGraphIngest(page, req.log).catch(() => { /* swallow; logged inside */ });
+      });
+    }
     res.json(page);
   } catch (err) {
     req.log.error({ err }, "Failed to update page");
@@ -183,10 +225,8 @@ router.patch("/pages/:id", async (req, res) => {
 router.delete("/pages/:id", async (req, res) => {
   try {
     const { id } = DeletePageParams.parse(req.params);
-    // Fetch title before deletion for audit log
     const [existing] = await db.select().from(pagesTable).where(eq(pagesTable.id, id));
     if (!existing) { res.status(404).json({ error: "Page not found" }); return; }
-    // Detach children before deleting
     await db
       .update(pagesTable)
       .set({ parentId: null })

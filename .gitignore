@@ -47,3 +47,23 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# ===== 环境变量与密钥（绝不入库） =====
+.env
+.env.*
+!.env.example
+
+# Python 虚拟环境
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# 备份文件
+*.bak
+*.bak.*
+*.bak-*
+
+# 日志
+*.log
+.pm2/

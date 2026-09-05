@@ -186,6 +186,19 @@ export default function ChatPage() {
       } else if (event.type === "message") {
         setStreaming(prev => prev.filter(s => s.agentId !== event.message.senderId));
         qc.invalidateQueries({ queryKey: roomId ? getGetRoomMessagesQueryKey(roomId) : [] });
+      } else if (event.type === "note_saved") {
+        // 投研 agent 在回复末尾追加 invest-note 块，后端解析写入后发此事件
+        const n = (event as { note?: { code?: string; conclusion?: string } }).note;
+        if (n?.code) {
+          toast.success(`已保存投研笔记：${n.code}`, {
+            description: n.conclusion,
+            action: { label: "查看", onClick: () => { window.location.href = `/invest/stocks/${n.code}`; } },
+          });
+          // 刷新投研模块缓存，切到 /invest 即可看到
+          qc.invalidateQueries({ queryKey: ["invest-stock", n.code] });
+          qc.invalidateQueries({ queryKey: ["invest-notes"] });
+          qc.invalidateQueries({ queryKey: ["invest-overview"] });
+        }
       } else if (event.type === "done") {
         setStreaming([]);
         onDone();

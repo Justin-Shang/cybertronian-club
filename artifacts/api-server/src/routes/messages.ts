@@ -9,11 +9,144 @@ import {
   TriggerAgentRepliesBody,
 } from "@workspace/api-zod";
 import OpenAI from "openai";
+import { saveInvestNote } from "../lib/invest-notes";
 
 // Default OpenAI client (used when agent has no external API server configured)
 const defaultOpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 type AgentRow = typeof agentsTable.$inferSelect;
+
+// ──────────────── 投研笔记自动写入（chat 通道）────────────────
+// 擎天柱等投研 agent 在得出结论时，于回复末尾追加 ```invest-note {...} ``` 块。
+// 后端流结束后解析该块，调用 saveInvestNote 写入，并通过 note_saved SSE 事件通知前端。
+
+const INVEST_NOTE_PROMPT = `
+When you analyze a specific A-share stock and reach an investment conclusion, append a structured note block at the END of your reply so it can be saved to the investment notebook. Use EXACTLY this format (one JSON object inside a fenced invest-note block):
+
+\`\`\`invest-note
+{"code":"600519","frameworkId":"value","title":"简短标题","conclusion":"一句话核心结论","content":"# markdown 正文\\n详细分析..."}
+\`\`\`
+
+Rules:
+- "code" = 6-digit A-share code (e.g. "600519"). Required.
+- "frameworkId" = optional analysis framework id (e.g. "value","growth","quality","dividend").
+- "conclusion" = one-sentence core conclusion. Required.
+- "content" = markdown body with the detailed reasoning. Required.
+- Emit the block ONLY when there is a genuine stock-analysis conclusion worth saving. Keep your visible reply concise; put the full analysis in "content".
+- Do NOT emit the block for general chat, greetings, or non-stock topics.`;
+
+function isInvestmentAgent(agent: AgentRow): boolean {
+  const text = `${agent.role} ${agent.systemPrompt}`;
+  return /投研|投资|金融|股票|二级市场|portfolio|invest|equit/i.test(text);
+}
+
+interface ParsedNoteBlock {
+  code: string;
+  frameworkId?: string;
+  title?: string;
+  conclusion: string;
+  content: string;
+}
+
+/**
+ * 从 agent 回复中提取 invest-note JSON。
+ * 擎天柱等自主 agent 常不闭合 ``` 围栏，而是切换到 DSML 标签，
+ * 因此用大括号配平从 ```invest-note 标记后的首个 { 抽取完整 JSON，
+ * 不依赖闭合围栏；同时兼容正常闭合的围栏与 DSML parameter 包裹。
+ */
+function extractInvestNotes(content: string): ParsedNoteBlock[] {
+  const results: ParsedNoteBlock[] = [];
+  const marker = "```invest-note";
+  let searchFrom = 0;
+  while (true) {
+    const markerIdx = content.indexOf(marker, searchFrom);
+    if (markerIdx === -1) break;
+    const braceStart = content.indexOf("{", markerIdx + marker.length);
+    if (braceStart === -1) {
+      searchFrom = markerIdx + marker.length;
+      continue;
+    }
+    // 大括号配平，跳过字符串内的 { } 与转义
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let endIdx = -1;
+    for (let i = braceStart; i < content.length; i++) {
+      const ch = content[i];
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) { endIdx = i; break; }
+      }
+    }
+    if (endIdx === -1) {
+      searchFrom = markerIdx + marker.length;
+      continue;
+    }
+    const jsonStr = content.slice(braceStart, endIdx + 1);
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (parsed && typeof parsed.code === "string" && typeof parsed.conclusion === "string" && typeof parsed.content === "string") {
+        results.push({
+          code: parsed.code,
+          frameworkId: parsed.frameworkId ?? undefined,
+          title: parsed.title ?? undefined,
+          conclusion: parsed.conclusion,
+          content: parsed.content,
+        });
+      }
+    } catch {
+      // malformed JSON — skip
+    }
+    searchFrom = endIdx + 1;
+  }
+  return results;
+}
+
+/**
+ * 移除回复中的 invest-note 块及残留 DSML 标签，保留可见正文。
+ * invest-note 块总是在回复末尾，故从标记处截断到结尾，再清理 DSML 残片。
+ */
+function stripInvestNoteBlocks(content: string): string {
+  let result = content.replace(/```invest-note[\s\S]*$/g, "");
+  // 清理残留的 DSML 标签（擎天柱自主 agent 的工具调用标记，全角｜）
+  result = result.replace(/<\/?[｜|]{2}DSML[｜|]{2}[^>]*>/g, "");
+  // 清理末尾空围栏与多余空白
+  result = result.replace(/```\s*$/g, "").replace(/\s+$/, "").trim();
+  return result || content.trim();
+}
+
+/** 解析 fullContent 中的笔记块，逐一写入并发出 note_saved 事件（在 message 事件之后调用）。 */
+async function saveInvestNotesFromContent(
+  fullContent: string,
+  agent: AgentRow,
+  roomId: number,
+  sendEvent: (data: object) => void,
+  log: { error: (obj: object, msg: string) => void },
+): Promise<void> {
+  const blocks = extractInvestNotes(fullContent);
+  for (const block of blocks) {
+    try {
+      const note = await saveInvestNote({
+        code: block.code,
+        frameworkId: block.frameworkId ?? null,
+        title: block.title ?? null,
+        conclusion: block.conclusion,
+        content: block.content,
+        author: "agent",
+        agentName: agent.name,
+        roomId,
+      });
+      sendEvent({ type: "note_saved", agentId: agent.id, agentName: agent.name, note });
+    } catch (err) {
+      log.error({ err, code: block.code }, "Failed to save invest note from chat");
+    }
+  }
+}
 
 /**
  * Get an OpenAI client for an agent.
@@ -42,7 +175,8 @@ function buildSystemPrompt(agent: AgentRow, allAgents: AgentRow[]): string {
     `You are ${agent.name}, a Hermes agent with the role: ${agent.role}.\n\n` +
     `${agent.systemPrompt}\n\n` +
     `You are in a group chat room. Respond in character. Be concise (1-3 sentences unless detail is needed). ` +
-    (others ? `Other agents in the room: ${others}.` : "")
+    (others ? `Other agents in the room: ${others}.` : "") +
+    (isInvestmentAgent(agent) ? INVEST_NOTE_PROMPT : "")
   );
 }
 
@@ -128,10 +262,10 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
         model,
         messages: chatMessages,
         stream: true,
-        max_tokens: 512,
+        max_tokens: isInvestmentAgent(agent) ? 2048 : 512,
       });
       for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
+        const delta = chunk.choices?.[0]?.delta?.content;
         if (delta) {
           fullContent += delta;
           sendEvent({ type: "stream_chunk", agentId: agent.id, content: delta });
@@ -143,6 +277,9 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
       continue;
     }
 
+    // 投研 agent 可能在回复末尾追加 invest-note 块；剥离后持久化干净正文
+    const cleanContent = stripInvestNoteBlocks(fullContent);
+
     const [agentMsg] = await db
       .insert(messagesTable)
       .values({
@@ -151,11 +288,14 @@ router.post("/rooms/:roomId/messages", async (req, res): Promise<void> => {
         senderId: agent.id,
         senderName: agent.name,
         senderColor: agent.color,
-        content: fullContent,
+        content: cleanContent,
       })
       .returning();
 
     sendEvent({ type: "message", message: agentMsg });
+
+    // 解析 invest-note 块并写入投研笔记，发出 note_saved 事件
+    await saveInvestNotesFromContent(fullContent, agent, params.data.roomId, sendEvent, req.log);
   }
 
   sendEvent({ type: "done" });
@@ -209,9 +349,9 @@ router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => 
 
       let fullContent = "";
       try {
-        const stream = await client.chat.completions.create({ model, messages: chatMessages, stream: true, max_tokens: 512 });
+        const stream = await client.chat.completions.create({ model, messages: chatMessages, stream: true, max_tokens: isInvestmentAgent(agent) ? 2048 : 512 });
         for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
+          const delta = chunk.choices?.[0]?.delta?.content;
           if (delta) { fullContent += delta; sendEvent({ type: "stream_chunk", agentId: agent.id, content: delta }); }
         }
       } catch (err) {
@@ -220,12 +360,16 @@ router.post("/rooms/:roomId/trigger-agents", async (req, res): Promise<void> => 
         continue;
       }
 
+      const cleanContent = stripInvestNoteBlocks(fullContent);
+
       const [agentMsg] = await db
         .insert(messagesTable)
-        .values({ roomId: params.data.roomId, senderType: "agent", senderId: agent.id, senderName: agent.name, senderColor: agent.color, content: fullContent })
+        .values({ roomId: params.data.roomId, senderType: "agent", senderId: agent.id, senderName: agent.name, senderColor: agent.color, content: cleanContent })
         .returning();
 
       sendEvent({ type: "message", message: agentMsg });
+
+      await saveInvestNotesFromContent(fullContent, agent, params.data.roomId, sendEvent, req.log);
     }
   }
 
